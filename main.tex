@@ -1,0 +1,152 @@
+
+
+
+
+\documentclass{beamer}
+\usepackage{multimedia}
+\usetheme{Madrid}
+
+\usepackage{amsmath, bm}
+\graphicspath{{./gfx/}}
+
+\newcommand{\ppos}{q}
+\newcommand{\pvel}{u}
+\newcommand{\fpos}{r}
+\newcommand{\fvel}{v}
+\newcommand{\corr}{\text{corr}}
+\newcommand{\dpr}{\text{\tiny DP}}
+\newcommand{\qtd}{\text{\tiny q2D}}
+\renewcommand{\vec}[1]{\bm{#1}}
+\newcommand{\tens}[1]{\bm{\mathcal{#1}}}
+\newcommand{\oper}[1]{\mathcal{#1}}
+\newcommand{\uammd}{\gls{UAMMD}\xspace}
+\newcommand{\gpu}{\gls{GPU}\xspace}
+\newcommand{\dt}{\delta t}
+\newcommand{\kT}{k_B T}
+\newcommand{\sinc}{\textrm{sinc}}
+\newcommand{\floor}{\textrm{floor}}
+\newcommand{\near}{\textrm{near}}
+\newcommand{\far}{\textrm{far}}
+\newcommand{\half}{\frac{1}{2}}
+\newcommand{\red}[1]{{\color{red}#1}}
+\newcommand{\fou}[1]{\widehat{#1}}
+\newcommand{\noise}{\widetilde{W}}
+
+
+\title{Complex fluids in the GPU era}
+\subtitle{Algorithms and simulations}
+\author{Raul P. Pelaez}
+
+\institute{Universidad Autónoma de Madrid}
+\date{\today}
+
+
+\begin{document}
+
+
+\begin{frame}
+  \titlepage
+\end{frame}
+
+\begin{frame}
+  \tableofcontents
+\end{frame}
+
+\section{Introduction}
+\begin{frame}
+  \frametitle{\insertsectionnavigation{\linewidth}}
+  \begin{itemize}
+  \item Outline
+  \item Physics, algorithms and implementation
+  \item This thesis contributions
+  \end{itemize}
+\end{frame}
+
+\subsection{Complex fluids}
+\begin{frame}
+  \frametitle{\insertsubsectionnavigation{\linewidth}}
+  \begin{itemize}
+  \item What a complex fluid is and why we care
+  \item Coarse-graining
+  \end{itemize}
+\end{frame}
+\subsubsection{A typical system of interest}
+\begin{frame}
+  \frametitle{\insertsubsectionnavigation{\linewidth}} 
+  \framesubtitle{\insertsubsubsection}
+  \begin{itemize}
+  \item ``We want to study this particular system (a virus?, QCM?)''
+  \item Problems that arise when trying to simulate this system
+  \item The message is: We need new theory and algorithms. If we carefully design a software for a system like this, we end up with something that is also valid for things like MD,  SPH, DPD,...
+  \end{itemize}
+\end{frame}
+\subsection{High performance computing in complex fluids}
+\begin{frame}
+  \frametitle{\insertsubsectionnavigation{\linewidth}} 
+  \begin{itemize}
+  \item The GPU
+  \item Other software packages
+  \item Trying to keep it simple
+  \end{itemize}
+\end{frame}
+
+
+\section{The different ingredients of a complex fluid simulation}
+
+\begin{frame}
+  \frametitle{\insertsectionnavigation{\linewidth}} 
+  \begin{itemize}
+  \item Hydrodynamics
+  \item Particle interactions
+  \item Electrostatics
+  \end{itemize}
+\end{frame}
+
+\subsection{Hydrodynamics}
+\begin{frame}
+  \frametitle{\insertsubsectionnavigation{\linewidth}}
+  \begin{itemize}
+  \item Fluid dynamics
+  \item Particle-fluid coupling (IBM)
+  \item Pseudo-spectral solvers (FCM)
+  \end{itemize}
+\end{frame}
+
+\subsection{Particle interactions}
+\begin{frame}
+  \frametitle{\insertsubsectionnavigation{\linewidth}}
+  \begin{itemize}
+  \item Neighbour lists
+  \item bonds
+  \end{itemize}
+\end{frame}
+
+\subsection{Electrostatics}
+\begin{frame}
+  \frametitle{\insertsubsectionnavigation{\linewidth}}
+  \begin{itemize}
+  \item Poisson equation
+  \item Reuse of FCM
+  \end{itemize}  
+\end{frame}
+    
+\subsection{UAMMD: A GPU framework for complex fluids}
+\begin{frame}
+  \frametitle{\insertsubsectionnavigation{\linewidth}} 
+  \begin{itemize}
+  \item What UAMMD is and tries to achieve
+  \item ``UAMMD has enabled the community to study hydrodynamics in new systems''
+  \item Not trying to sell UAMMD, just showcase what it can do.    
+  \end{itemize}
+\end{frame}
+
+\section{New physics}
+
+\begin{frame}
+  \frametitle{\insertsectionnavigation{\linewidth}} 
+  \begin{itemize}
+  \item List works using UAMMD, what level of detail here?
+  \end{itemize}
+\end{frame}
+
+\end{document}
