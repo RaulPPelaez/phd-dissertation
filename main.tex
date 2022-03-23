@@ -1,8 +1,4 @@
-
-
-
-
-\documentclass{beamer}
+\documentclass[xcolor=dvipsnames]{beamer}
 \usepackage{transparent}
 \usepackage{pgfplots}
 \usepackage[utf8]{inputenc}
@@ -20,7 +16,6 @@
 \beamertemplatenavigationsymbolsempty
 \usefonttheme[onlymath]{serif}
 \graphicspath{{./gfx/}}
-
 \newcommand{\ppos}{q}
 \newcommand{\pvel}{u}
 \newcommand{\fpos}{r}
@@ -219,11 +214,18 @@
     \centering
     \includegraphics[width=0.5\linewidth]{membrane}\includegraphics[width=0.2\linewidth]{star}
     \includegraphics[width=0.2\linewidth]{optofluidics}\\
-    {\fontsize{4.5}{12} \selectfont [{\bf Panzuela, S. and Delgado-Buscalioni, R.} PRL 2018.]  -  [{\bf Raul P. Pelaez and Delgado-Buscalioni, R.} Macromolecules 2020]    -   [{\bf  Mel\'endez, M.} et al. PRE 2019.]}\\    
-    \movie[autostart,loop,poster,showcontrols=true,width=0.3\linewidth]{\includegraphics[width=0.3\linewidth]{virus_scr.png}}{gfx/virus.mp4}
-    \movie[autostart,loop,poster,showcontrols=true,width=0.3\linewidth]{\includegraphics[width=0.3\linewidth]{rots.png}}{gfx/rots.mp4}\includegraphics[width=0.3\linewidth]{q2Dcolorstripe}\\
-    {\fontsize{4.5}{12} \selectfont [Courtesy of Pablo Ibañez] ------------ [Courtesy of Berta Tinao] -------------- [{\bf Raul P. Pelaez} et al. JSTAT 2018.]}
-%    \includesvg[width=0.49\linewidth]{gfx/q2d}
+    {\fontsize{4.5}{12} \selectfont [{\bf Panzuela, S. and Delgado-Buscalioni, R.} PRL 2018.]  -  [{\bf Raul P. Pelaez and Delgado-Buscalioni, R.} Macromolecules 2020]    -   [{\bf  Mel\'endez, M.} et. al. PRE 2019.]}\\
+    \only<1>{\movie[autostart,loop,poster,showcontrols=true,width=0.3\linewidth]{\includegraphics[width=0.3\linewidth]{virus_scr.png}}{gfx/virus.mp4}}%
+    \only<2>{\includegraphics[width=0.235\linewidth]{lipostrandspablo.png}}%
+    \movie[autostart,loop,poster,showcontrols=true,width=0.3\linewidth]{\includegraphics[width=0.3\linewidth]{rots.png}}{gfx/rots.mp4}%
+    \only<1>{%
+      \includegraphics[width=0.3\linewidth]{q2Dcolorstripe}\\
+      {\fontsize{4.5}{12} \selectfont [Courtesy of Pablo Ibañez] ------------ [Courtesy of Berta Tinao] -------------- [{\bf Raul P. Pelaez} et. al. JSTAT 2018.]}%
+    }
+    \only<2>{%
+      \includegraphics[width=0.22\linewidth]{mnppablo.png}\\
+      {\fontsize{4.5}{12} \selectfont [Courtesy of Pablo Palacios] ------------------------ [Courtesy of Berta Tinao] ----------------------------------------- [Courtesy of Pablo Palacios]}
+    }
   \end{figure}
 \end{frame}
 
@@ -456,7 +458,7 @@
 \begin{frame} 
   \frametitle{Short range interactions}
   \framesubtitle{Neighbour lists: Performance}
-  \centering Example: Lennard-Jones potential, $r_c=2.5\sigma$
+  \centering Example: Lennard-Jones potential, $r_c=2.5\sigma$ and $\varepsilon = kT$.
   $$U_{LJ}(r) = 
   \begin{cases}
     4 \varepsilon \left[ \left(\frac{\sigma}{r}\right)^{12} - \left( \frac{\sigma}{r}\right)^6 \right] & r<r_c\\
@@ -472,24 +474,84 @@
 \begin{frame}
   \frametitle{Long range interactions}
   \begin{columns}[T]
-    \begin{column}{0.4\linewidth}
+    \begin{column}{0.6\linewidth}
       \begin{itemize}
       \item Brute force
       \item Pseudo-spectral methods
+        \onslide*<3->{%
+          \begin{itemize}
+          \item FFT $\rightarrow$ cuFFT (library calls)
+          \item IBM $\rightarrow$ We have to cook it ourselves%
+          \end{itemize}
+        }%
       \item {\small\transparent{0.5} Tree-based methods}
       \end{itemize}
     \end{column}
-    \begin{column}{0.6\linewidth}%
+    \begin{column}{0.4\linewidth}%
       \begin{overlayarea}{\linewidth}{0.5\paperheight}
       \only<1>{\includesvg[width=0.7\linewidth]{gfx/nbodycon}}%
-      \only<2>{\includesvg[width=\linewidth]{gfx/fftpibm}}%
+      \only<2->{\includesvg[width=\linewidth]{gfx/fftpibm}}%
       \end{overlayarea}
     \end{column}%
   \end{columns}
 \end{frame}
 \subsubsection{Particle-grid coupling}
+\begin{frame}
+  \frametitle{Particle-grid coupling}
+  \framesubtitle{GPU thread geometry}
+  \includesvg[width=\linewidth]{gfx/cudablocks}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Particle-grid coupling}
+  \framesubtitle{GPU-friendly algorithm}
+  \begin{columns}
+    \begin{column}{0.6\linewidth}
+      \begin{itemize}
+      \item {\color{ForestGreen} $b_i$}: Block assigned to particle $i$.
+      \item {\color{red} $t_j$}: Thread $j\in [0:N_b)$ of block $i$, assigned to grid point $n$.
+      \end{itemize}
+      \begin{block}<2->{\textbf{Spreading:} $\vec{f}_n = \sum_i \vec{F}_i\delta(\vec{r}_n-\vec{q}_i)$}
+        $t_j\rightarrow$ write to $\vec{f}_n$ \alert<4>{atomically}.
+      \end{block}
+      \begin{block}<3->{\textbf{Interpolation:} $\vec{u}_i = \sum_n \vec{v}_n\delta(\vec{r}_n-\vec{q}_i)h^3$}
+        \textbf{1.} $t_j\rightarrow$ gather from $\vec{v}_n$.\\
+        \textbf{2.} $t_{\{0\dots 9\}}$ reduce into $\vec{u}_i$.
+      \end{block}
+    \end{column}
+    \begin{column}{0.4\linewidth}
+      \includesvg[width=\linewidth]{gfx/ibm_algo}
+    \end{column}
+  \end{columns}
+\end{frame}
 
 
+\begin{frame}
+  \frametitle{Particle-grid coupling}
+  \framesubtitle{Performance}
+  \centering
+  \includegraphics[width=0.6\linewidth]{gfx/ibm_comp_dens1_2080ti}\\
+  \begin{minipage}{0.4\linewidth}
+    \begin{exampleblock}{Largest number of particles}
+      \centering
+      $N=512^3 \approx 1.3\cdot 10^8$
+    \end{exampleblock} 
+  \end{minipage}
+  % \begin{columns}[T]
+%    \begin{column}{0.4\linewidth}
+%    \end{column}
+%    \begin{column}{0.6\linewidth}
+%
+%    \end{column}
+%  \end{columns}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Increasing data locality}
+  \only<+>{\includesvg[width=0.8\linewidth]{gfx/celllist0}}%
+  \only<+>{\includesvg[width=0.8\linewidth]{gfx/celllist1}}%
+  \only<+>{\includesvg[width=0.8\linewidth]{gfx/celllist2}}%
+\end{frame}
 \section{UAMMD}
 \begin{frame}
   \frametitle{Talk outline}
@@ -500,11 +562,6 @@
   ]
 \end{frame}
 
-
-\subsection{The challenges of a GPU complex fluid software}
-\begin{frame}
-  \frametitle{The challenges of a GPU complex fluid software}
-\end{frame}
 \subsection{Universally Adaptable Multiscale Molecular Dynamics}
 \begin{frame}[t]
   \frametitle{UAMMD}
