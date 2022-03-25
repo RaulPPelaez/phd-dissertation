@@ -11,6 +11,8 @@
 \usepackage{mathtools}
 \usepackage{courier}
 \usepackage{tikz}
+\tikzstyle{every picture}+=[remember picture]
+
 \usepackage{caption}
 \usepackage{lmodern}
 \beamertemplatenavigationsymbolsempty
@@ -127,6 +129,7 @@
 \AddToHook{cmd/section/before}{\setcounter{framesectioncounter}{0}}
 \pdfmapfile{-mpfonts.map}
 \usepackage{lmodern}
+\everymath{\displaystyle}
 \begin{document}
 
 
@@ -474,20 +477,20 @@
 \begin{frame}
   \frametitle{Long range interactions}
   \begin{columns}[T]
-    \begin{column}{0.6\linewidth}
+    \begin{column}{0.4\linewidth}
       \begin{itemize}
       \item Brute force
-      \item Pseudo-spectral methods
+      \item Spectral methods
         \onslide*<3->{%
           \begin{itemize}
-          \item FFT $\rightarrow$ cuFFT (library calls)
-          \item IBM $\rightarrow$ We have to cook it ourselves%
+          \item FFT:\\ cuFFT (library calls)
+          \item IBM:\\ Hand made%
           \end{itemize}
         }%
       \item {\small\transparent{0.5} Tree-based methods}
       \end{itemize}
     \end{column}
-    \begin{column}{0.4\linewidth}%
+    \begin{column}{0.6\linewidth}%
       \begin{overlayarea}{\linewidth}{0.5\paperheight}
       \only<1>{\includesvg[width=0.7\linewidth]{gfx/nbodycon}}%
       \only<2->{\includesvg[width=\linewidth]{gfx/fftpibm}}%
@@ -499,7 +502,16 @@
 \begin{frame}
   \frametitle{Particle-grid coupling}
   \framesubtitle{GPU thread geometry}
-  \includesvg[width=\linewidth]{gfx/cudablocks}
+  \includesvg[width=0.8\linewidth]{gfx/cudablocks}\\
+  \onslide<2->{
+    \centering
+    \Large Special considerations:
+    \begin{itemize}
+    \item<2-> Massively parallel
+    \item<3-> Single Instruction Multiple Data (SIMD)
+    \item<4-> Mostly memory-bandwidth bound
+    \end{itemize}
+  }
 \end{frame}
 
 \begin{frame}
@@ -552,6 +564,29 @@
   \only<+>{\includesvg[width=0.8\linewidth]{gfx/celllist1}}%
   \only<+>{\includesvg[width=0.8\linewidth]{gfx/celllist2}}%
 \end{frame}
+
+\begin{frame}
+  \frametitle{Particle-grid coupling}
+  \framesubtitle{Performance}
+  \centering
+  \begin{tikzpicture}    
+    \begin{scope}
+      \draw node[anchor = west, inner sep = 0] (image) {\includegraphics[width=0.49\linewidth]{gfx/ibm_comp_dens1_sorted_2080ti}};
+    \end{scope}
+    \draw node [above] (text) at (image.north) {\huge Sorted};
+    \begin{scope}
+      \draw node[anchor = east, inner sep = 0] (image2) {\includegraphics[width=0.49\linewidth]{gfx/ibm_comp_dens1_2080ti}};
+    \end{scope}
+    \draw node [above] (text2) at (image2.north) {\huge Unsorted};
+  \end{tikzpicture}\\
+  \begin{minipage}{0.4\linewidth}
+    \begin{exampleblock}{Largest number of particles}
+      \centering
+      $N=512^3 \approx 1.3\cdot 10^8$
+    \end{exampleblock}    
+  \end{minipage}
+\end{frame}
+
 \section{UAMMD}
 \begin{frame}
   \frametitle{Talk outline}
@@ -692,10 +727,304 @@
   ]
 \end{frame}
 
+\begin{frame}
+  \frametitle{Hydrodynamics in confined geometries}
+  \framesubtitle{New algorithms for Brownian Dynamics with Hydrodynamic Interactions (BDHI)}
+    \begin{figure}
+    \centering
+    \includesvg[width=0.55\linewidth]{gfx/multiscale}
+  \end{figure}  
+
+\end{frame}
 \subsection{Hydrodynamics}
+\begin{frame}
+  \frametitle{Hydrodynamics in confined geometries}
+  \framesubtitle{New algorithms for Brownian Dynamics with Hydrodynamic Interactions (BDHI)}   
+  \begin{columns}[T]
+    \begin{column}{0.5\linewidth}
+      \begin{itemize}
+      \item<1-> Quasi two-dimensional (q2D)
+      \item<4-> Doubly periodic (DP)
+      \end{itemize}
+      \begin{overlayarea}{\linewidth}{0.5\paperheight}
+        \only<1-3>{\includesvg[width=0.9\linewidth]{gfx/q2D}\\
+          \begin{center}
+            q2D: $\delta\rightarrow\infty$. 3D fluid, 2D particles
+          \end{center}
+          }
+        \only<4>{\includesvg[width=0.9\linewidth]{gfx/dpstokes_sketch}}
+      \end{overlayarea}
+    \end{column}
+    \begin{column}{0.5\linewidth}
+      \begin{overlayarea}{\linewidth}{0.5\paperheight}
+        \begin{minipage}{\linewidth}
+          \only<2>{
+            \begin{block}{Collective diffusion}
+              $$D_c(k) \propto H_c(k)$$
+              \includegraphics[width=\linewidth]{gfx/q2Dfrom3dto2d}\\
+            \end{block}
+          }
+          \only<3>{\begin{block}{$D_c(k)> 0$ in q2D}          
+              \begin{center}
+                Correlated density perturbations
+                \includegraphics[width=\linewidth]{gfx/q2Dstripes}\\
+                \small Time$\rightarrow$
+              \end{center}
+            t2D: 2D fluid and particles
+            \end{block}
+          }
+        \end{minipage}
+      \end{overlayarea}
+    \end{column}
+  \end{columns}
+\end{frame}
+\begin{frame}
+  \frametitle{Smoluchowski level}
+  \framesubtitle{Brownian Dynamics with Hydrodynamics Interactions (BDHI)}
+  \Large
+  \begin{equation*}
+    d\vec{\ppos} = \tens{M}\vec{F}dt + \sqrt{2\kT\tens{M}}d\vec{\noise}
+    + \kT\vec{\partial}_{\vec{\ppos}}\cdot\tens{M}dt.
+  \end{equation*}
+  \vspace*{10pt}
+  \begin{overlayarea}{\linewidth}{0.6\paperheight}
+    \only<1-3>{
+      \begin{itemize}
+      \item<1-> $\tens{M}(\vec{\ppos})$:\\
+        Mobility tensor. Configuration- and BC-dependent
+      \item<2-> $d\vec{\noise}$: Brownian motion
+      \item<3-> $\kT\vec{\partial}_{\vec{\ppos}}\cdot\tens{M}dt$:\\
+        Thermal drift. Zero depending on the BCs
+      \end{itemize}
+    }
+    \only<4->{
+      \centering \textbf{Problems}
+      \vspace*{10pt}
+      \begin{itemize}        
+        \setlength\itemsep{10pt}
+      \item<5-> $\tens{M}\vec{F}$: Matrix-vector multiplication is $O(N^2)$
+      \item<6-> $\sqrt{\tens{M}}$: Quite expensive in general. $O(N^{[2.25-3]})$
+      \item<7-> $\tens{M}$ might be unknown/not analytical.
+      \end{itemize}
+    }
+  \end{overlayarea}
+\end{frame}
+\begin{frame}
+  \frametitle{Hydrodynamics}
+  %\only<1-4>{\framesubtitle{Incompressible Navier-Stokes equations}}
+  %\only<4->{\framesubtitle{Fluctuating Incompressible Navier-Stokes equations}}
+  %\only<8->{\framesubtitle{Fluctuating Stokes equations}}
+  \framesubtitle{\only<6->{Fluctuating} Stokes equations}
+  \begin{equation*}
+    \label{eq:navierstokes}
+    \begin{aligned}
+      %\onslide<1-7>{\overbrace{\underbrace{\rho\partial_t{\vec{\fvel}}}_{\text{time}} +\underbrace{\rho\nabla\cdot (\vec{\fvel}\otimes\vec{\fvel})}_{\text{convection}}}^{\text{fluid inertia}}}
+      \onslide<2->{\overbrace{-\eta \nabla^2\vec{\fvel}}^{\text{momentum diffusion}}}
+      \onslide<3->{&= \underbrace{-\nabla \pi}_{\text{internal stress}}}
+      \onslide<4->{+ \underbrace{\tilde{\vec{f}}}_{\text{\parbox{2cm}{\centering external stress}}}}\\
+      \onslide<5->{\nabla\cdot\vec{\fvel} &= 0\quad\mathllap{\underbrace{\phantom{\nabla\cdot\vec{\fvel} = 0}}_{\text{incompressibility}}}}
+    \end{aligned}
+  \end{equation*}
+  \onslide<6->{
+    \begin{equation*}
+      \tilde{\vec{f}}(\vec{r}) := \underbrace{\vec{f}(\vec{r})}_{\text{external forces}} + \overbrace{\nabla\cdot \mathcal{Z}}^{\text{thermal noise}}
+    \end{equation*}
+  }
+  \onslide<7->{
+    \begin{equation*}
+      \label{eq:navierstkesnoise}
+      \begin{aligned}
+        &  \langle \mathcal Z_{ij}\rangle = 0\\
+        &  \langle \mathcal Z_{ik}(\vec{\fpos},t)\mathcal Z_{jm}(\vec{\fpos}',t')\rangle = 2\kT\eta(\delta_{ij}\delta_{km} + \delta_{im}\delta_{kj})\delta(\vec{\fpos}-\vec{\fpos}')\delta(t-t')
+      \end{aligned}
+    \end{equation*}
+  }
+\end{frame}
+\begin{frame}
+  \frametitle{Hydrodynamics}
+  \framesubtitle{Fluctuating Stokes equations}
+  \begin{columns}[T]
+    \begin{column}{0.34\linewidth}
+      \begin{block}{Stokes equations}
+        $%
+        \begin{aligned}%
+          \nabla \pi - \eta \nabla^2\vec{\fvel} &=  \vec{f} + \nabla\cdot \mathcal{Z}\\
+          \nabla\cdot\vec{\fvel} &= 0%
+        \end{aligned}
+        $%
+      \end{block}
+      \onslide<2->{
+        \begin{minipage}{\linewidth}
+          \begin{block}{Fluid forcing}
+            \centering $\vec{f}(\vec{r}) = \oper{S}(\vec{r})\vec{F}$
+          \end{block}
+          \begin{block}{Particle velocity}
+            \centering $\vec{u}_i = \oper{J}_{\vec{q}_i}\vec{v}(\vec{r})$
+          \end{block}
+        \end{minipage}
+      }
+      \end{column}
+      \begin{column}{0.63\linewidth}
+        \onslide<3->{
+          {
+            \begin{center}
+              \huge \textbf{Green formalism}
+            \end{center}
+          }
+          \centering $\vec{v} = \oper{G}\tilde{\vec{f}}
+          \onslide<4->{
+            :=\int{\oper{G}(\vec{r}, \vec{r}^\prime)\tilde{\vec{f}}(\vec{r}) d\vec{r}^\prime}
+          }$ %\left(\oper{S}\vec{F} + \nabla\cdot\mathcal{Z}\right)$$
+          \onslide<5->{
+            \begin{block}{Force Coupling Method (FCM)}
+              \centering $\frac{d\vec{q}_i}{dt} = \vec{u}_i = \oper{J}_{\vec{\ppos}_i}\oper{G}(\oper{S}\vec{F} + \nabla\cdot\mathcal Z)$
+            \end{block}
+          }%
+          \begin{overlayarea}{\linewidth}{0.3\paperheight}
+            \only<6>{
+                \begin{equation*}
+                \begin{aligned}
+                  &\tens{M} &=&\oper{J}\oper{G}\oper{S}\\
+                  &\tens{M}^{1/2} &=&\oper{J}\oper{G}\nabla\cdot
+                \end{aligned}
+              \end{equation*}
+            }%
+            \only<7>{
+              \begin{equation*}
+                \tens{M}_{ij}=\iint{\delta(\vec{r}-\vec{\ppos}_j)\oper{G}(\vec{r},\vec{r}^\prime)\delta(\vec{\ppos}_i-\vec{r}^\prime)d\vec{r}^\prime d\vec{r}}
+              \end{equation*}
+            }%
+            \onslide<8->{\centering $\oper{G} :=-\eta^{-1}\nabla^{-2}\left(\mathbb{I} - \nabla\nabla^{-2}\nabla\right)$\\}%
+            \onslide<9>{
+              \begin{block}{\centering Open boundaries}
+                \centering $\oper{G}\rightarrow \tens{O}(\vec{r}) = \frac{1}{8\pi\eta r}\left(\mathbb{I} - \frac{\vec{r}\otimes\vec{r}}{r^2}\right)$
+              \end{block}
+            }
+          \end{overlayarea}
+        }
+      \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Hydrodynamics}
+  \framesubtitle{Triply periodic FCM}
+  \centering
+  \huge
+  \begin{tikzpicture}[thick]
+    \node [style = {draw}] (a) at (0, 4) {$\vec{u}_i= \oper{J}_{\vec{\ppos}_i}\oper{G}(\oper{S}\vec{F} + \nabla\cdot\mathcal Z)$};
+    \onslide<2>{
+      \node [style = {draw}] (b) at (0, 0) {$\vec{u}_i = \oper{J}_{\vec{\ppos}_i}\mathfrak{F}^{-1}\fou{\oper{G}}(\mathfrak{F}\oper{S}\vec{F} + \vec{k}\cdot\mathcal Z)$};
+      \draw[->, very thick] (a) to (b);
+      \node (c) at (3.2, 2){ $\mathfrak{F}$: Fourier transform};
+    }
+  \end{tikzpicture}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Hydrodynamics}
+  \framesubtitle{Triply periodic FCM}
+  \Large
+  $$\vec{u}_i = \oper{J}_{\vec{\ppos}_i}\mathfrak{F}^{-1}\fou{\oper{G}}(\mathfrak{F}\oper{S}\vec{F} + \vec{k}\cdot\mathcal Z)$$
+  \begin{block}{\centering Triply Periodic}
+    \centering $\fou{\oper{G}}_{\text{3D}} :=\eta^{-1}k^{-2}\left(\mathbb{I} - \frac{\vec{k}\otimes\vec{k}}{k^2}\right)$
+  \end{block}
+\end{frame}
+\begin{frame}
+  \frametitle{Force Coupling Method in quasi 2D}
+  \begin{overlayarea}{\linewidth}{0.2\paperheight}
+    \begin{block}{\centering Force Coupling Method}
+      \begin{center}
+        \only<1-8>{$\vec{u}_i = \oper{J}_{\vec{\ppos}_i}\mathfrak{F}^{-1}\fou{\oper{G}}_{\text{3D}}(\mathfrak{F}\oper{S}\vec{F} + \vec{k}\cdot\mathcal Z)$}%
+        \only<9-10>{$\vec{u}_i = \oper{J}_{\vec{\ppos}_i}\mathfrak{F}^{-1}\left(\fou{\oper{G}}_{\text{3D}}\mathfrak{F}\oper{S}\vec{F} + \fou{\vec{w}}\right)$}
+        \only<11->{$\vec{u}_i = \oper{J}_{\vec{\ppos}_i}\mathfrak{F}^{-1}\left(\fou{\oper{G}}_{\qtd}\mathfrak{F}\oper{S}\vec{F} + \fou{\vec{w}}\right)$}
+      \end{center}
+    \end{block}
+  \end{overlayarea}
+  \begin{columns}[T]
+    \begin{column}{0.4\linewidth}
+      \includesvg[width=0.9\linewidth]{gfx/q2D}\\
+      \begin{center}
+        q2D: $\delta\rightarrow\infty$. 3D fluid, 2D particles
+      \end{center}
+    \end{column}
+    \begin{column}{0.6\linewidth}
+      \begin{overlayarea}{\linewidth}{0.7\paperheight}
+        \only<1-7>{
+          \only<2->{Problems:}
+          \begin{enumerate}
+          \item<3-> 2D limit implies $F_z\rightarrow \infty$
+          \item<4-> Open boundaries in Z require $L_z\rightarrow\infty$ 
+          \end{enumerate}
+          \only<5->{Solutions:}
+          \begin{enumerate}
+          \item<6-> Pure 2D description 
+          \item<7> Preconvolve $\oper{G}$ in Z
+          \end{enumerate}
+        }
+        \only<8-9>{
+          Pure 2D description:
+        }
+        \only<9>{
+          \begin{center}
+            $\left\langle\fou{\vec{w}}\otimes \fou{\vec{w}}\right\rangle = 2\kT \fou{\oper{G}}$
+          \end{center}
+        }
+        
+        \only<10->{
+          Preconvolve $\oper{G}$ in Z
+          \begin{block}{Remember}
+            $\delta(\vec{r}) := \phi(r_x)\phi(r_y)\phi(r_z)\rightarrow$ Smeared delta
+          \end{block}
+        }
+        \only<11>{
+          \begin{center}
+            $\fou{\tens{G}}_{\qtd}(\vec{k}^{\parallel}) = \frac{1}{2\pi}\int\fou{\phi}(k_z)^2\fou{\tens{G}}_{\text{3D}}(\vec{k}^{\parallel},k_z)dk_z$
+          \end{center}
+        }
+        \only<12>{
+          \begin{center}
+            $\fou{\tens{G}}_{\qtd}(\vec{k}) = \eta^{-1}\left(g(k)\vec{k}^{\perp}\otimes\vec{k}^{\perp} + f(k)\vec{k}\otimes\vec{k}\right)$
+          \end{center}
+        }
+
+      \end{overlayarea}
+    \end{column}
+  \end{columns}
+\end{frame}
+
 \subsection{Electrostatics}
 \begin{frame}
-  
+  \frametitle{Triply Periodic Electrostatics}
+  \framesubtitle{Force Coupling Method for the Poisson equation}
+  \begin{center}
+    \begin{minipage}{0.5\linewidth}    
+      \begin{block}{Poisson}
+        \centering $\varepsilon\nabla^2\phi = -f(\vec{r}) = -\oper{S}(\vec{r})\vec{Q}$
+      \end{block}
+    \end{minipage}
+  \end{center}
+  \begin{overlayarea}{\linewidth}{0.5\paperheight}
+    \begin{columns}[T]
+      \begin{column}{0.4\linewidth}
+        \begin{block}<2->{Spreading}
+          $\oper{S}(\vec{r})\vec{Q} = \sum_i Q_i \delta(\vec{\ppos}_i - \vec{r})$
+        \end{block}
+        \begin{block}<3->{Gaussian sources}
+          $\delta(\vec{r}) = \frac{1}{(2\pi a^2)^{3/2}} e^{-r^2/(2a^2)}$
+        \end{block}
+        
+      \end{column}
+      \begin{column}{0.6\linewidth}
+        \begin{block}<4->{Charges to forces}
+          $$\vec{F}_i = Q_i\oper{J}_{\vec{q}_i}\mathfrak{F}^{-1}i\vec{k}\fou{\oper{G}}_P\mathfrak{F}\oper{S}\vec{Q}$$
+        \end{block}
+        \only<4->{$$\fou{\oper{G}}_P = \varepsilon^{-1}k^{-2}$$}
+        
+      \end{column}
+    \end{columns}
+  \end{overlayarea}
+  \only<1-3>{\footnotesize Supervector notation. Charges $\vec{Q} := \{\vec{Q}_1,\dots,\vec{Q}_N\}$}
 \end{frame}
 %\section{Introduction}
 %\begin{frame}
