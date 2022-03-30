@@ -1,4 +1,5 @@
 \documentclass[xcolor=dvipsnames]{beamer}
+\usepackage[outline]{contour}
 \usepackage{transparent}
 \usepackage{pgfplots}
 \usepackage[utf8]{inputenc}
@@ -12,7 +13,7 @@
 \usepackage{courier}
 \usepackage{tikz}
 \tikzstyle{every picture}+=[remember picture]
-
+\usetikzlibrary{positioning}
 \usepackage{caption}
 \usepackage{lmodern}
 \beamertemplatenavigationsymbolsempty
@@ -144,33 +145,6 @@
 \end{frame}
 
 %\section{This thesis main contributions}
-\begin{frame}
-  \setbeamercovered{transparent=40}
-%  \setbeamertemplate{itemize/enumerate subbody begin}{\vspace{0.5cm}}
-  \setbeamertemplate{itemize/enumerate subbody end}{\vspace{1cm}}
-  \frametitle{This thesis main contributions}
-  \begin{enumerate}
-    \Large\color{blue}
-  \item \textbf{Software}.
-    \begin{itemize}
-    \item<+-> UAMMD: Complex fluids in the GPU      
-    \item<+-> Superpunto: A particle visualizator
-    \item<+-> GPU post-processing tools: RDF, MSD, correlations...
-    \end{itemize}
-  \item<+-> \textbf{Algorithms}.
-    \begin{itemize}
-    \item<+-> Electrostatics and Hydrodynamics in doubly periodic domains.
-    \item<+-> Eulerian-Lagrangian coupling.
-    \end{itemize}
-  \item<+-> \textbf{Physics}.
-    \begin{itemize}
-    \item<+-> Colloid diffusion under soft (and hard) two-dimensional confinement.
-    \item<+-> Dynamics of star-polymer solutions.
-    \item<+-> Intra-cellular viscosity.
-    \end{itemize}
-%  \item Use this slide to give an outline of the talk
-  \end{enumerate}
-\end{frame}
 
 
 \begin{frame}
@@ -239,9 +213,17 @@
   \framesubtitle{The spatio-temporal landscape of numerical techniques.}
   \begin{figure}
     \centering
-    \includesvg[width=0.8\linewidth]{gfx/landscape}
+    \begin{tikzpicture}
+      \node[anchor=south west, inner sep=0] (image) {\includesvg[width=0.8\linewidth]{gfx/landscape}};
+      \begin{scope}[shift={(image.south west)},x={(image.south east)},y={(image.north west)}]
+        %\draw foreach \xy in {0,0.1,...,1.001}{(\xy,0) -- node[pos=0,below]{\pgfmathprintnumber{\xy}} (\xy,1)(0,\xy) -- node[pos=0,left]{\pgfmathprintnumber{\xy}} (1,\xy)};
+        \only<2>{\filldraw[red, opacity=0.6] (0.12,1) rectangle (0.5,0.07) node[midway] (A) {};\node[above=50pt of A, black]{\contourlength{1pt}\contour{white}{\textbf{Fully Lagrangian}}};}
+        \only<4>{\filldraw[blue, opacity=0.6] (0.5,1) rectangle (0.72,0.07) node[midway] (A) {};\node[below=40pt of A, black, align=left]{\contourlength{1pt}\contour{white}{\textbf{Eulerian}}\\\contourlength{1pt}\contour{white}{\textbf{Lagrangian}}};}
+        \only<3>{\filldraw[green, opacity=0.6] (0.72,1) rectangle (1,0.07) node[midway] (A) {};\node[above=50pt of A, black]{\contourlength{1pt}\contour{white}{\textbf{Fully Eulerian}}};}
+      \end{scope}
+    \end{tikzpicture}
     \caption{Figure courtesy of Rafael Delgado-Buscalioni.}
-  \end{figure}
+  \end{figure}  
 \end{frame}
 
 \subsubsection{Coarse-grained levels of description}
@@ -317,7 +299,7 @@
       \only<2>{%
           \begin{aligned}
             &\rho\partial_t\vec{\fvel} = -\vec{\partial}_{\vec{\fpos}}\cdot \tens{\sigma} + \vec{f} + \text{fluct}\\
-            \int_{V_p}\vec{f}d\vec{\fpos} &= \vec{F}_i\quad\text{and}\quad \vec{u}_i = \int_{V_p}\vec{\fvel}(\vec{\fpos}, t)d\vec{\fpos}
+            \int_{V_p}\vec{f}d\vec{\fpos} &= \vec{F}_i\quad\text{and}\quad \vec{u}_i = \int_{V_p}\vec{\fvel}d\vec{\fpos}
           \end{aligned}%
        }%
       \only<3>{m d\vec{\pvel} = \vec{F}dt - \xi\vec{\pvel}dt +  \sqrt{2\xi\kT}\vec{\noise}}%
@@ -359,7 +341,11 @@
   ]
 \end{frame}
 
-\subsection{Computational Challenges}
+
+% \subsection{Computational Challenges}
+
+
+
 \begin{frame}
   \frametitle{Computational challenges in soft matter simulation}
   \setbeamercovered{transparent=40}
@@ -367,68 +353,31 @@
     \begin{column}{0.6\linewidth}
       \begin{enumerate}
         \Large
-      \item<1,2> Short range interactions
-      \item<1,3,4> Long range interactions
-      \item<1,5-> Particle-grid coupling
+      \item Short range interactions
+      \item<1> Long range interactions
+      \item<1> Particle-grid coupling
       \end{enumerate}
       \begin{overlayarea}{\linewidth}{0.5\paperheight}
-        \only<2>{
-          \centering Example: Lennard-Jones potential
+        \only<2>{\centering Example: Lennard-Jones potential
           $$U_{LJ}(r) = 
             \begin{cases}
               4 \epsilon \left[ \left(\frac{\sigma}{r}\right)^{12} - \left( \frac{\sigma}{r}\right)^6 \right] & r<r_c\\
               0 & r\ge r_c
             \end{cases}$$
-        }
-        \only<3,4>{
-          \centering Electrostatics:
-          $$U_{\text{Coulomb}}(r) = \frac{1}{4\pi \varepsilon_0}\frac{Q_iQ_j}{r} $$
-          \centering Hydrodynamics:
-          $$\tens{O}(\vec{r}) = \frac{1}{8\pi\eta r}\left(\mathbb{I} - \frac{\vec{r}\otimes\vec{r}}{r^2}\right)$$
-        }
-        \only<5->{
-          \centering Spreading ($\oper{S}$):
-          $$\vec{f}(\vec{r}) = \oper{S}(\vec{r})\vec{F} := \sum_i \vec{F}_i\delta(\vec{r}-\vec{q}_i)$$
-          \only<6->{{$\delta(\vec{r}) := \phi(r_x)\phi(r_y)\phi(r_z)\rightarrow$ Smeared delta}\newline\newline}
-        }
-        \only<7>{
-          \centering Interpolation ($\oper{J}$):
-          $$\vec{u}_i = \oper{J}_{\vec{q}_i}\vec{v}(\vec{r}) = \int \vec{v}(\vec{r})\delta(\vec{r}-\vec{q}_i)d\vec{r}$$
-        }
-        \only<8>{
-          \centering Interpolation ($\oper{J}$):
-          $$\vec{u}_i = \oper{J}_{\vec{q}_i}\vec{v}(\vec{r}) \approx \sum_n \vec{v}_n\delta(\vec{r}_n-\vec{q}_i)h^3$$
-        }
-        
+          }
       \end{overlayarea}
     \end{column}
     \begin{column}{0.4\linewidth}
-      \onslide*<2->{
-      \begin{figure}
-        \centering                 
-        \only<2>{\includesvg[width=\linewidth]{gfx/nlist}}%
-        \only<3>{\includesvg[width=\linewidth]{gfx/nbodycon}}%
-        \only<4>{\includesvg[width=\linewidth]{gfx/pbc}}%
-        \only<5>{\includesvg[width=\linewidth]{gfx/ibm_spread}}%
-        \only<6>{          
-          \resizebox{\linewidth}{!}{
-            \begin{tikzpicture}
-              \begin{axis}[ticks=none,samples=100,ylabel={\Huge $\phi(r)$},xlabel={\Huge $r$}, xlabel near ticks, ylabel near ticks, axis line style=ultra thick]
-                \addplot[blue, ultra thick, domain=-1:1] {exp(-x^2*10)};
-              \end{axis}
-            \end{tikzpicture}
-          }
-        }
-        \only<7,8>{\includesvg[width=\linewidth]{gfx/ibm_interp}}%
-      \end{figure}
-    }
-    \only<6>{\centering Example: $\phi(r) \propto e^{-\frac{r^2}{2\sigma^2}}$}
+      \only<2>{
+        \begin{figure}
+          \centering                 
+          \includesvg[width=\linewidth]{gfx/nlist}
+        \end{figure}
+      }
     \end{column}
   \end{columns}
-  \setbeamercovered{transparent=0}
-  \onslide<5>{{\footnotesize Supervector notation $\vec{F} := \{\vec{F}_1,\dots,\vec{F}_N\}$}}
 \end{frame}
-\subsection{How to solve them with a GPU}
+
 \subsubsection{Short range}
 \begin{frame}
   \frametitle{Short range interactions}
@@ -472,7 +421,35 @@
   \includegraphics[width=0.49\linewidth]{nlistperf_dens0.1}
 \end{frame}
 
-\subsubsection{Long range}
+\subsection{Long range}
+\begin{frame}
+  \frametitle{Computational challenges in soft matter simulation}
+  \begin{columns}[T]
+    \begin{column}{0.6\linewidth}
+      \begin{enumerate}
+        \Large
+      \item {\transparent{0.4} Short range interactions}
+      \item Long range interactions
+      \item {\transparent{0.4} Particle-grid coupling}
+      \end{enumerate}
+      \begin{overlayarea}{\linewidth}{0.5\paperheight}
+        \only<2->{\centering Electrostatics:
+          $$U_{\text{Coulomb}}(r) = \frac{1}{4\pi \varepsilon_0}\frac{Q_iQ_j}{r} $$
+          \centering Hydrodynamics:
+          $$\tens{O}(\vec{r}) = \frac{1}{8\pi\eta r}\left(\mathbb{I} - \frac{\vec{r}\otimes\vec{r}}{r^2}\right)$$
+        }
+      \end{overlayarea}
+    \end{column}
+    \begin{column}{0.4\linewidth}
+      \begin{figure}
+        \centering                 
+        \only<2>{\includesvg[width=\linewidth]{gfx/nbodycon}}%
+        \only<3>{\includesvg[width=\linewidth]{gfx/pbc}}%
+      \end{figure}
+    \end{column}
+  \end{columns}
+\end{frame}
+
 
 \begin{frame}
   \frametitle{Long range interactions}
@@ -498,7 +475,65 @@
     \end{column}%
   \end{columns}
 \end{frame}
-\subsubsection{Particle-grid coupling}
+
+
+
+
+
+
+\subsection{Particle-grid coupling}
+
+\begin{frame}
+  \frametitle{Computational challenges in soft matter simulation}
+  \setbeamercovered{transparent=40}
+  \begin{columns}[T]
+    \begin{column}{0.6\linewidth}
+      \begin{enumerate}
+        \Large
+      \item {\transparent{0.4} Short range interactions}
+      \item {\transparent{0.4} Long range interactions}
+      \item Particle-grid coupling
+      \end{enumerate}
+      \begin{overlayarea}{\linewidth}{0.5\paperheight}
+        \only<2->{
+          \centering Spreading ($\oper{S}$):
+          $$\vec{f}(\vec{r}) = \oper{S}(\vec{r})\vec{F} := \sum_i \vec{F}_i\delta_a(\vec{r}-\vec{q}_i)$$
+          \only<3->{{$\delta_a(\vec{r}) := \phi(r_x)\phi(r_y)\phi(r_z)\rightarrow$ Smeared delta}\newline\newline}
+        }
+        \only<4>{
+          \centering Interpolation ($\oper{J}$):
+          $$\vec{u}_i = \oper{J}_{\vec{q}_i}\vec{v}(\vec{r}) = \int \vec{v}(\vec{r})\delta_a(\vec{r}-\vec{q}_i)d\vec{r}$$
+        }
+        \only<5>{
+          \centering Interpolation ($\oper{J}$):
+          $$\vec{u}_i = \oper{J}_{\vec{q}_i}\vec{v}(\vec{r}) \approx \sum_n \vec{v}_n\delta_a(\vec{r}_n-\vec{q}_i)h^3$$
+        }        
+      \end{overlayarea}
+    \end{column}
+    \begin{column}{0.4\linewidth}
+      \onslide*<2->{
+      \begin{figure}
+        \centering                 
+        \only<2>{\includesvg[width=\linewidth]{gfx/ibm_spread}}%
+        \only<3>{          
+          \resizebox{\linewidth}{!}{
+            \begin{tikzpicture}
+              \begin{axis}[ticks=none,samples=100,ylabel={\Huge $\phi(r)$},xlabel={\Huge $r$}, xlabel near ticks, ylabel near ticks, axis line style=ultra thick]
+                \addplot[blue, ultra thick, domain=-1:1] {exp(-x^2*10)};
+              \end{axis}
+            \end{tikzpicture}
+          }
+        }
+        \only<4,5>{\includesvg[width=\linewidth]{gfx/ibm_interp}}%
+      \end{figure}
+    }
+    \only<3>{\centering Example: $\phi(r) \propto e^{-\frac{r^2}{2\sigma^2}}$}
+    \end{column}
+  \end{columns}
+  \setbeamercovered{transparent=0}
+  \onslide<2>{{\footnotesize Supervector notation $\vec{F} := \{\vec{F}_1,\dots,\vec{F}_N\}$}}
+\end{frame}
+
 \begin{frame}
   \frametitle{Particle-grid coupling}
   \framesubtitle{GPU thread geometry}
@@ -523,10 +558,10 @@
       \item {\color{ForestGreen} $b_i$}: Block assigned to particle $i$.
       \item {\color{red} $t_j$}: Thread $j\in [0:N_b)$ of block $i$, assigned to grid point $n$.
       \end{itemize}
-      \begin{block}<2->{\textbf{Spreading:} $\vec{f}_n = \sum_i \vec{F}_i\delta(\vec{r}_n-\vec{q}_i)$}
+      \begin{block}<2->{\textbf{Spreading:} $\vec{f}_n = \sum_i \vec{F}_i\delta_a(\vec{r}_n-\vec{q}_i)$}
         $t_j\rightarrow$ write to $\vec{f}_n$ \alert<4>{atomically}.
       \end{block}
-      \begin{block}<3->{\textbf{Interpolation:} $\vec{u}_i = \sum_n \vec{v}_n\delta(\vec{r}_n-\vec{q}_i)h^3$}
+      \begin{block}<3->{\textbf{Interpolation:} $\vec{u}_i = \sum_n \vec{v}_n\delta_a(\vec{r}_n-\vec{q}_i)h^3$}
         \textbf{1.} $t_j\rightarrow$ gather from $\vec{v}_n$.\\
         \textbf{2.} $t_{\{0\dots 9\}}$ reduce into $\vec{u}_i$.
       \end{block}
@@ -536,7 +571,6 @@
     \end{column}
   \end{columns}
 \end{frame}
-
 
 \begin{frame}
   \frametitle{Particle-grid coupling}
@@ -587,136 +621,6 @@
   \end{minipage}
 \end{frame}
 
-\section{UAMMD}
-\begin{frame}
-  \frametitle{Talk outline}
-  \tableofcontents[
-  sectionstyle=show/shaded,
-  subsectionstyle=show/show/hide,
-  subsubsectionstyle=show/show/show/hide
-  ]
-\end{frame}
-
-\subsection{Universally Adaptable Multiscale Molecular Dynamics}
-\begin{frame}[t]
-  \frametitle{UAMMD}
-  \framesubtitle{Universally Adaptable Multiscale Molecular Dynamics}
-  \begin{overprint}
-    \onslide<+>
-    \centering \huge \bf Universal
-    \onslide<+>
-    \centering \huge \bf Adaptable
-    \onslide<+>
-    \centering \huge \bf Multiscale
-    \onslide<+>
-    \centering \huge \bf Molecular Dynamics
-  \end{overprint}
-  \begin{columns}[T]
-    \begin{column}{0.65\linewidth}
-      \begin{overlayarea}{\linewidth}{0.6\paperheight}
-        \begin{figure}
-          \only<1>{%
-            \includesvg[width=0.9\linewidth]{gfx/universally}%
-          }%
-          \only<2>{%
-            \includesvg[width=0.8\linewidth]{gfx/virus}%
-          }%
-          \only<3>{%
-            \includesvg[width=0.8\linewidth]{gfx/scales}%
-          }%
-          \only<4>{%
-            \includegraphics[width=0.9\linewidth]{shotlogo}%
-          }%
-        \end{figure}
-      \end{overlayarea}
-    \end{column}
-    \begin{column}{0.35\linewidth}      
-      \includegraphics[width=1.0\linewidth]{poster.png}
-     \end{column}
-   \end{columns}
-   \only<1>{\Large Lagrangian and Eulerian descriptions.}%
-   \only<2>{\Large Independent building blocks.}%
-   \only<3>{\Large Solvers for many scales.}%
-   \only<4>{\Large Mainly particle based.}%
-\end{frame}
-\subsection{Basic code structure}
-\begin{frame}[fragile]
-  \frametitle{UAMMD}
-  \framesubtitle{Conceptual hierarchy}
-  \includesvg[width=\linewidth]{gfx/sketchUAMMD}
-  \begin{overprint}
-    \onslide<2>
-    \begin{code2}[]{label=code:module}
-      #include<uammd.cuh>
-      int main(int argc, char* argv[]){
-        auto sys = std::make_shared<System>(argc, argv);
-        ...
-    \end{code2}
-    \onslide<3>
-    \begin{code2}[]{label=code:module}
-      #include<uammd.cuh>
-      int main(int argc, char* argv[]){
-        auto sys = std::make_shared<System>(argc, argv);
-        const int nP = 1e6; //Number of particles
-        auto pd = std::make_shared<ParticleData>(nP, sys);
-        ...
-      \end{code2}
-      \onslide<4>
-    \begin{code2}[]{label=code:module}
-      ...
-      auto pos = pd->getPos(access::cpu, access::write);
-      pos[0] = {1,1,1,0}; // x,y,x, color (type)
-      ...
-    \end{code2}
-    \onslide<5>
-    \begin{code2}[]{label=code:module}
-      ...
-      auto md = std::make_shared<VerletNVE>(pd, /*Parameters*/);
-      md->forwardTime(); //Exposed by every Integrator
-      ...      
-    \end{code2}
-    \onslide<6>
-    \begin{code2}[]{label=code:module}
-      ...
-      auto electro = std::make_shared<Poisson>(pd,
-                                              /*Parameters*/);
-      //Exposed by every Integrator
-      md->addInteractor(electro); 
-      md->forwardTime();
-      ...      
-    \end{code2}
-  \end{overprint}
-\end{frame}
-
-
-\begin{frame}
-  \frametitle{The sea of packages}
-  \includesvg[width=\linewidth]{gfx/mdpacks}
-\end{frame}
-
-\begin{frame}
-  \frametitle{What makes UAMMD stand out}
-  
-  \begin{itemize}
-    \Large
-  \item Header only and library-like
-  \item Lightweight with minimal dependencies
-  \item Hackable
-  \item Focus on hydrodynamics
-  \end{itemize}
-\end{frame}
-
-  
-\begin{frame}
-  \frametitle{Available solvers}
-    \includesvg[width=\linewidth]{gfx/sketchUAMMD_integrators}
-\end{frame}
-
-\begin{frame}
-  \frametitle{Available interactions}
-    \includesvg[width=\linewidth]{gfx/sketchUAMMD_interactors}
-\end{frame}
-
 \section{New doubly periodic solvers}
 \begin{frame}
   \frametitle{Talk outline}
@@ -734,50 +638,30 @@
     \centering
     \includesvg[width=0.55\linewidth]{gfx/multiscale}
   \end{figure}  
+\end{frame}
 
-\end{frame}
-\subsection{Hydrodynamics}
 \begin{frame}
-  \frametitle{Hydrodynamics in confined geometries}
-  \framesubtitle{New algorithms for Brownian Dynamics with Hydrodynamic Interactions (BDHI)}   
-  \begin{columns}[T]
-    \begin{column}{0.5\linewidth}
-      \begin{itemize}
-      \item<1-> Quasi two-dimensional (q2D)
-      \item<4-> Doubly periodic (DP)
-      \end{itemize}
-      \begin{overlayarea}{\linewidth}{0.5\paperheight}
-        \only<1-3>{\includesvg[width=0.9\linewidth]{gfx/q2D}\\
-          \begin{center}
-            q2D: $\delta\rightarrow\infty$. 3D fluid, 2D particles
-          \end{center}
-          }
-        \only<4>{\includesvg[width=0.9\linewidth]{gfx/dpstokes_sketch}}
-      \end{overlayarea}
-    \end{column}
-    \begin{column}{0.5\linewidth}
-      \begin{overlayarea}{\linewidth}{0.5\paperheight}
-        \begin{minipage}{\linewidth}
-          \only<2>{
-            \begin{block}{Collective diffusion}
-              $$D_c(k) \propto H_c(k)$$
-              \includegraphics[width=\linewidth]{gfx/q2Dfrom3dto2d}\\
-            \end{block}
-          }
-          \only<3>{\begin{block}{$D_c(k)> 0$ in q2D}          
-              \begin{center}
-                Correlated density perturbations
-                \includegraphics[width=\linewidth]{gfx/q2Dstripes}\\
-                \small Time$\rightarrow$
-              \end{center}
-            t2D: 2D fluid and particles
-            \end{block}
-          }
-        \end{minipage}
-      \end{overlayarea}
-    \end{column}
-  \end{columns}
+  \frametitle{Complex fluids}
+  \framesubtitle{The spatio-temporal landscape of numerical techniques.}
+  \begin{figure}
+    \centering    
+    \begin{tikzpicture}
+      \node[anchor=south west, inner sep=0] (image) {\includesvg[width=0.8\linewidth]{gfx/landscape}};
+      \onslide<2>{
+        \begin{scope}[shift={(image.south west)},x={(image.south east)},y={(image.north west)}]
+        %\draw foreach \xy in {0,0.1,...,1.001}{(\xy,0) -- node[pos=0,below]{\pgfmathprintnumber{\xy}} (\xy,1)(0,\xy) -- node[pos=0,left]{\pgfmathprintnumber{\xy}} (1,\xy)};
+%        \only<2>{\filldraw[red, opacity=0.6] (0.12,1) rectangle (0.5,0.07) node[midway] (A) {};\node[above=50pt of A, black]{\contourlength{1pt}\contour{white}{\textbf{Fully Lagrangian}}};}
+        \filldraw[blue, opacity=0.6] (0.5,1) rectangle (0.72,0.07) node[midway] (A) {};\node[below=40pt of A, black, align=left]{\contourlength{1pt}\contour{white}{\textbf{Eulerian}}\\\contourlength{1pt}\contour{white}{\textbf{Lagrangian}}};
+%        \only<3>{\filldraw[green, opacity=0.6] (0.72,1) rectangle (1,0.07) node[midway] (A) {};\node[above=50pt of A, black]{\contourlength{1pt}\contour{white}{\textbf{Fully Eulerian}}};}
+      \end{scope}
+      }
+    \end{tikzpicture}
+    \caption{Figure courtesy of Rafael Delgado-Buscalioni.}
+  \end{figure}  
 \end{frame}
+
+
+\subsection{Hydrodynamics}
 \begin{frame}
   \frametitle{Smoluchowski level}
   \framesubtitle{Brownian Dynamics with Hydrodynamics Interactions (BDHI)}
@@ -885,13 +769,14 @@
                 \begin{equation*}
                 \begin{aligned}
                   &\tens{M} &=&\oper{J}\oper{G}\oper{S}\\
-                  &\tens{M}^{1/2} &=&\oper{J}\oper{G}\nabla\cdot
+                  &\tens{M}^{1/2} &=&\oper{J}\oper{G}\nabla\cdot\\
+                  &\vec{\partial}_{\vec{q}}\cdot\tens{M} &=&0\leftarrow \text{Incompressible}
                 \end{aligned}
               \end{equation*}
             }%
             \only<7>{
               \begin{equation*}
-                \tens{M}_{ij}=\iint{\delta(\vec{r}-\vec{\ppos}_j)\oper{G}(\vec{r},\vec{r}^\prime)\delta(\vec{\ppos}_i-\vec{r}^\prime)d\vec{r}^\prime d\vec{r}}
+                \tens{M}_{ij}=\iint{\delta_a(\vec{r}-\vec{\ppos}_j)\oper{G}(\vec{r},\vec{r}^\prime)\delta_a(\vec{\ppos}_i-\vec{r}^\prime)d\vec{r}^\prime d\vec{r}}
               \end{equation*}
             }%
             \onslide<8->{\centering $\oper{G} :=-\eta^{-1}\nabla^{-2}\left(\mathbb{I} - \nabla\nabla^{-2}\nabla\right)$\\}%
@@ -913,8 +798,8 @@
   \huge
   \begin{tikzpicture}[thick]
     \node [style = {draw}] (a) at (0, 4) {$\vec{u}_i= \oper{J}_{\vec{\ppos}_i}\oper{G}(\oper{S}\vec{F} + \nabla\cdot\mathcal Z)$};
-    \onslide<2>{
-      \node [style = {draw}] (b) at (0, 0) {$\vec{u}_i = \oper{J}_{\vec{\ppos}_i}\mathfrak{F}^{-1}\fou{\oper{G}}(\mathfrak{F}\oper{S}\vec{F} + \vec{k}\cdot\mathcal Z)$};
+    \onslide<2->{
+      \node [style = {draw}] (b) at (0, 0) {$\vec{u}_i = \oper{J}_{\vec{\ppos}_i}\onslide<3->{\mathfrak{F}^{-1}}\only<3->{\fou{\oper{G}}}\only<2>{\oper{G}}(\onslide<3->{\mathfrak{F}}\oper{S}\vec{F} + \onslide+<2>{\nabla}\onslide+<3->{\vec{k}}\cdot\mathcal Z)$};
       \draw[->, very thick] (a) to (b);
       \node (c) at (3.2, 2){ $\mathfrak{F}$: Fourier transform};
     }
@@ -924,20 +809,62 @@
 \begin{frame}
   \frametitle{Hydrodynamics}
   \framesubtitle{Triply periodic FCM}
-  \Large
+  \huge
   $$\vec{u}_i = \oper{J}_{\vec{\ppos}_i}\mathfrak{F}^{-1}\fou{\oper{G}}(\mathfrak{F}\oper{S}\vec{F} + \vec{k}\cdot\mathcal Z)$$
-  \begin{block}{\centering Triply Periodic}
+  \begin{block}{\huge\centering Triply Periodic}
     \centering $\fou{\oper{G}}_{\text{3D}} :=\eta^{-1}k^{-2}\left(\mathbb{I} - \frac{\vec{k}\otimes\vec{k}}{k^2}\right)$
   \end{block}
+\end{frame}
+\begin{frame}
+  \frametitle{Hydrodynamics in confined geometries}
+  \framesubtitle{New algorithms for Brownian Dynamics with Hydrodynamic Interactions (BDHI)}   
+  \begin{columns}[T]
+    \begin{column}{0.5\linewidth}
+      \begin{itemize}
+      \item<1-> Quasi two-dimensional (q2D)
+      \item<4-> Doubly periodic (DP)
+      \end{itemize}
+      \begin{overlayarea}{\linewidth}{0.5\paperheight}
+        \only<1-3>{\includesvg[width=0.9\linewidth]{gfx/q2D}\\
+          \begin{center}
+            q2D: $\delta\rightarrow 0$. 3D fluid, 2D particles
+          \end{center}
+          }
+        \only<4>{\includesvg[width=0.9\linewidth]{gfx/dpstokes_sketch}}
+      \end{overlayarea}
+    \end{column}
+    \begin{column}{0.5\linewidth}
+      \begin{overlayarea}{\linewidth}{0.5\paperheight}
+        \begin{minipage}{\linewidth}
+          \only<2>{
+            \begin{block}{Collective diffusion}
+              $$D_c(k) \propto H_c(k)$$
+              \includegraphics[width=\linewidth]{gfx/q2Dfrom3dto2d}\\
+            \end{block}
+          }
+          \only<3>{\begin{block}{$D_c(k)> 0$ in q2D}          
+              \begin{center}
+                Correlated density perturbations
+                \includegraphics[width=\linewidth]{gfx/q2Dstripes}\\
+                \small Time$\rightarrow$
+              \end{center}
+            t2D: 2D fluid and particles
+            \end{block}
+          }
+        \end{minipage}
+      \end{overlayarea}
+    \end{column}
+  \end{columns}
 \end{frame}
 \begin{frame}
   \frametitle{Force Coupling Method in quasi 2D}
   \begin{overlayarea}{\linewidth}{0.2\paperheight}
     \begin{block}{\centering Force Coupling Method}
       \begin{center}
-        \only<1-8>{$\vec{u}_i = \oper{J}_{\vec{\ppos}_i}\mathfrak{F}^{-1}\fou{\oper{G}}_{\text{3D}}(\mathfrak{F}\oper{S}\vec{F} + \vec{k}\cdot\mathcal Z)$}%
-        \only<9-10>{$\vec{u}_i = \oper{J}_{\vec{\ppos}_i}\mathfrak{F}^{-1}\left(\fou{\oper{G}}_{\text{3D}}\mathfrak{F}\oper{S}\vec{F} + \fou{\vec{w}}\right)$}
-        \only<11->{$\vec{u}_i = \oper{J}_{\vec{\ppos}_i}\mathfrak{F}^{-1}\left(\fou{\oper{G}}_{\qtd}\mathfrak{F}\oper{S}\vec{F} + \fou{\vec{w}}\right)$}
+        \only<1-7>{$\vec{u}_i = \oper{J}_{\vec{\ppos}_i}\mathfrak{F}^{-1}\fou{\oper{G}}_{\text{3D}}(\mathfrak{F}\oper{S}\vec{F} + \vec{k}\cdot\mathcal Z)$}%
+        \only<8-9>{$\vec{u}_i = \oper{J}_{\vec{\ppos}_i}\mathfrak{F}^{-1}\left(\fou{\oper{G}}_{\text{3D}}\mathfrak{F}\oper{S}\vec{F} + \fou{\vec{w}}\right)$}
+        \only<10-11>{$\vec{u}_i = \oper{J}_{\vec{\ppos}_i}\mathfrak{F}^{-1}\left(\fou{\oper{G}}_{\qtd}\mathfrak{F}\oper{S}\vec{F} + \fou{\vec{w}}\right)$}
+        \only<12->{$\vec{u}_i = \oper{J}_{\vec{\ppos}_i}\mathfrak{F}^{-1}\left(\fou{\oper{G}}_{\qtd}\mathfrak{F}\left[\oper{S}\vec{F} + \vec{\partial}_{\vec{\ppos}}\oper{S}\left(\kT\right)\right] + \fou{\vec{w}}\right)$}
       \end{center}
     \end{block}
   \end{overlayarea}
@@ -945,49 +872,56 @@
     \begin{column}{0.4\linewidth}
       \includesvg[width=0.9\linewidth]{gfx/q2D}\\
       \begin{center}
-        q2D: $\delta\rightarrow\infty$. 3D fluid, 2D particles
+        q2D: $\delta\rightarrow 0$. 3D fluid, 2D particles
       \end{center}
+      \onslide<11->{$\vec{\partial}_{\vec{\ppos}}\cdot\left[\oper{J}\oper{G}_{\qtd}\oper{S}\right] \neq 0$}
     \end{column}
     \begin{column}{0.6\linewidth}
       \begin{overlayarea}{\linewidth}{0.7\paperheight}
-        \only<1-7>{
+        \only<1-6>{
           \only<2->{Problems:}
           \begin{enumerate}
           \item<3-> 2D limit implies $F_z\rightarrow \infty$
           \item<4-> Open boundaries in Z require $L_z\rightarrow\infty$ 
           \end{enumerate}
-          \only<5->{Solutions:}
+          \only<5->{Solution:}
           \begin{enumerate}
-          \item<6-> Pure 2D description 
-          \item<7> Preconvolve $\oper{G}$ in Z
+          \item<6> Eliminate Z direction
           \end{enumerate}
         }
-        \only<8-9>{
-          Pure 2D description:
+        \only<7-12>{
+          Eliminate Z direction:
+          \begin{enumerate}
+          \item<8> Fluctuations via FDT
+          \item<9-11> Preconvolve $\oper{G}$ in Z
+          \item<12-> Introduce thermal drift
+          \end{enumerate}
         }
-        \only<9>{
+        \only<8>{
           \begin{center}
             $\left\langle\fou{\vec{w}}\otimes \fou{\vec{w}}\right\rangle = 2\kT \fou{\oper{G}}$
           \end{center}
         }
-        
-        \only<10->{
-          Preconvolve $\oper{G}$ in Z
+        \only<9-11>{
           \begin{block}{Remember}
-            $\delta(\vec{r}) := \phi(r_x)\phi(r_y)\phi(r_z)\rightarrow$ Smeared delta
+            $\delta_a(\vec{r}) := \phi(r_x)\phi(r_y)\phi(r_z)\rightarrow$ Smeared delta
           \end{block}
         }
-        \only<11>{
+        \only<10>{
           \begin{center}
             $\fou{\tens{G}}_{\qtd}(\vec{k}^{\parallel}) = \frac{1}{2\pi}\int\fou{\phi}(k_z)^2\fou{\tens{G}}_{\text{3D}}(\vec{k}^{\parallel},k_z)dk_z$
           \end{center}
         }
-        \only<12>{
+        \only<11>{
           \begin{center}
             $\fou{\tens{G}}_{\qtd}(\vec{k}) = \eta^{-1}\left(g(k)\vec{k}^{\perp}\otimes\vec{k}^{\perp} + f(k)\vec{k}\otimes\vec{k}\right)$
           \end{center}
         }
-
+        \only<12>{
+          \begin{center}
+            $\vec{f}(\vec{r}) = \oper{S}\vec{F} + \vec{\partial}_{\vec{\ppos}}\oper{S}[\kT]$
+        \end{center}
+        }
       \end{overlayarea}
     \end{column}
   \end{columns}
@@ -1008,10 +942,10 @@
     \begin{columns}[T]
       \begin{column}{0.4\linewidth}
         \begin{block}<2->{Spreading}
-          $\oper{S}(\vec{r})\vec{Q} = \sum_i Q_i \delta(\vec{\ppos}_i - \vec{r})$
+          $\oper{S}(\vec{r})\vec{Q} = \sum_i Q_i \delta_a(\vec{\ppos}_i - \vec{r})$
         \end{block}
         \begin{block}<3->{Gaussian sources}
-          $\delta(\vec{r}) = \frac{1}{(2\pi a^2)^{3/2}} e^{-r^2/(2a^2)}$
+          $\delta_a(\vec{r}) = \frac{1}{(2\pi a^2)^{3/2}} e^{-r^2/(2a^2)}$
         \end{block}
         
       \end{column}
@@ -1123,4 +1057,163 @@
 %  \end{itemize}
 %\end{frame}
 %
+
+\section{UAMMD}
+\begin{frame}
+  \frametitle{Talk outline}
+  \tableofcontents[
+  sectionstyle=show/shaded,
+  subsectionstyle=show/show/hide,
+  subsubsectionstyle=show/show/show/hide
+  ]
+\end{frame}
+
+\begin{frame}
+  \frametitle{The sea of packages}
+  \includesvg[width=\linewidth]{gfx/mdpacks}
+\end{frame}
+
+\begin{frame}
+  \frametitle{What makes UAMMD stand out}
+  
+  \begin{itemize}
+    \Large
+  \item Header only and library-like
+  \item Lightweight with minimal dependencies
+  \item Hackable
+  \item Focus on hydrodynamics
+  \end{itemize}
+\end{frame}
+
+\subsection{Universally Adaptable Multiscale Molecular Dynamics}
+\begin{frame}[t]
+  \frametitle{UAMMD}
+  \framesubtitle{Universally Adaptable Multiscale Molecular Dynamics}
+  \begin{overprint}
+    \onslide<+>
+    \centering \huge \bf Universal
+    \onslide<+>
+    \centering \huge \bf Adaptable
+    \onslide<+>
+    \centering \huge \bf Multiscale
+    \onslide<+>
+    \centering \huge \bf Molecular Dynamics
+  \end{overprint}
+  \begin{columns}[T]
+    \begin{column}{0.65\linewidth}
+      \begin{overlayarea}{\linewidth}{0.6\paperheight}
+        \begin{figure}
+          \only<1>{%
+            \includesvg[width=0.9\linewidth]{gfx/universally}%
+          }%
+          \only<2>{%
+            \includesvg[width=0.8\linewidth]{gfx/virus}%
+          }%
+          \only<3>{%
+            \includesvg[width=0.8\linewidth]{gfx/scales}%
+          }%
+          \only<4>{%
+            \includegraphics[width=0.9\linewidth]{shotlogo}%
+          }%
+        \end{figure}
+      \end{overlayarea}
+    \end{column}
+    \begin{column}{0.35\linewidth}      
+      \includegraphics[width=1.0\linewidth]{poster.png}
+     \end{column}
+   \end{columns}
+   \only<1>{\Large Lagrangian and Eulerian descriptions.}%
+   \only<2>{\Large Independent building blocks.}%
+   \only<3>{\Large Solvers for many scales.}%
+   \only<4>{\Large Mainly particle based.}%
+\end{frame}
+\subsection{Basic code structure}
+\begin{frame}[fragile]
+  \frametitle{UAMMD}
+  \framesubtitle{Conceptual hierarchy}
+  \includesvg[width=\linewidth]{gfx/sketchUAMMD}
+  \begin{overprint}
+    \onslide<2>
+    \begin{code2}[]{label=code:module}
+      #include<uammd.cuh>
+      int main(int argc, char* argv[]){
+        auto sys = std::make_shared<System>(argc, argv);
+        ...
+    \end{code2}
+    \onslide<3>
+    \begin{code2}[]{label=code:module}
+      #include<uammd.cuh>
+      int main(int argc, char* argv[]){
+        auto sys = std::make_shared<System>(argc, argv);
+        const int nP = 1e6; //Number of particles
+        auto pd = std::make_shared<ParticleData>(nP, sys);
+        ...
+      \end{code2}
+      \onslide<4>
+    \begin{code2}[]{label=code:module}
+      ...
+      auto pos = pd->getPos(access::cpu, access::write);
+      pos[0] = {1,1,1,0}; // x,y,x, color (type)
+      ...
+    \end{code2}
+    \onslide<5>
+    \begin{code2}[]{label=code:module}
+      ...
+      auto md = std::make_shared<VerletNVE>(pd, /*Parameters*/);
+      md->forwardTime(); //Exposed by every Integrator
+      ...      
+    \end{code2}
+    \onslide<6>
+    \begin{code2}[]{label=code:module}
+      ...
+      auto electro = std::make_shared<Poisson>(pd,
+                                              /*Parameters*/);
+      //Exposed by every Integrator
+      md->addInteractor(electro); 
+      md->forwardTime();
+      ...      
+    \end{code2}
+  \end{overprint}
+\end{frame}
+  
+\begin{frame}
+  \frametitle{Available solvers}
+    \includesvg[width=\linewidth]{gfx/sketchUAMMD_integrators}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Available interactions}
+  \includesvg[width=\linewidth]{gfx/sketchUAMMD_interactors}
+  \note{We are already generalizing. Talk about the new interactions people are including: Optohydro, magnetism, coarse-grained potentials...}
+\end{frame}
+
+\section{Conclusions}
+\begin{frame}
+  \setbeamercovered{transparent=40}
+%  \setbeamertemplate{itemize/enumerate subbody begin}{\vspace{0.5cm}}
+  \setbeamertemplate{itemize/enumerate subbody end}{\vspace{1cm}}
+  \frametitle{This thesis main contributions}
+  \begin{enumerate}
+    \Large\color{blue}
+  \item \textbf{Software}.
+    \begin{itemize}
+    \item<+-> UAMMD: Complex fluids in the GPU      
+    \item<+-> Superpunto: A particle visualizator
+    \item<+-> GPU post-processing tools: RDF, MSD, correlations...
+    \end{itemize}
+  \item<+-> \textbf{Algorithms}.
+    \begin{itemize}
+    \item<+-> Electrostatics and Hydrodynamics in doubly periodic domains.
+    \item<+-> Eulerian-Lagrangian coupling.
+    \end{itemize}
+  \item<+-> \textbf{Physics}.
+    \begin{itemize}
+    \item<+-> Colloid diffusion under soft (and hard) two-dimensional confinement.
+    \item<+-> Dynamics of star-polymer solutions.
+    \item<+-> Intra-cellular viscosity.
+    \end{itemize}
+%  \item Use this slide to give an outline of the talk
+  \end{enumerate}
+\end{frame}
+
 \end{document}
