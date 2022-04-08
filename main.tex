@@ -14,6 +14,7 @@
 \usepackage{tikz}
 \tikzstyle{every picture}+=[remember picture]
 \usetikzlibrary{positioning}
+\usetikzlibrary{math}
 \usepackage{caption}
 \usepackage{lmodern}
 \beamertemplatenavigationsymbolsempty
@@ -378,7 +379,7 @@
   \end{columns}
 \end{frame}
 
-\subsubsection{Short range}
+\subsection{Short range}
 \begin{frame}
   \frametitle{Short range interactions}
   \framesubtitle{Neighbour lists}
@@ -799,7 +800,7 @@
   \begin{tikzpicture}[thick]
     \node [style = {draw}] (a) at (0, 4) {$\vec{u}_i= \oper{J}_{\vec{\ppos}_i}\oper{G}(\oper{S}\vec{F} + \nabla\cdot\mathcal Z)$};
     \onslide<2->{
-      \node [style = {draw}] (b) at (0, 0) {$\vec{u}_i = \oper{J}_{\vec{\ppos}_i}\onslide<3->{\mathfrak{F}^{-1}}\only<3->{\fou{\oper{G}}}\only<2>{\oper{G}}(\onslide<3->{\mathfrak{F}}\oper{S}\vec{F} + \onslide+<2>{\nabla}\onslide+<3->{\vec{k}}\cdot\mathcal Z)$};
+      \node [style = {draw}] (b) at (0, 0) {$\vec{u}_i = \oper{J}_{\vec{\ppos}_i}\onslide<3->{\mathfrak{F}^{-1}}\only<3->{\fou{\oper{G}}}\only<2>{\oper{G}}(\onslide<3->{\mathfrak{F}}\oper{S}\vec{F} + \onslide+<2>{\nabla}\onslide+<3->{\vec{k}}\cdot\mathcal Z\onslide+<3->{_{\vec{k}}})$};
       \draw[->, very thick] (a) to (b);
       \node (c) at (3.2, 2){ $\mathfrak{F}$: Fourier transform};
     }
@@ -810,7 +811,7 @@
   \frametitle{Hydrodynamics}
   \framesubtitle{Triply periodic FCM}
   \huge
-  $$\vec{u}_i = \oper{J}_{\vec{\ppos}_i}\mathfrak{F}^{-1}\fou{\oper{G}}(\mathfrak{F}\oper{S}\vec{F} + \vec{k}\cdot\mathcal Z)$$
+  $$\vec{u}_i = \oper{J}_{\vec{\ppos}_i}\mathfrak{F}^{-1}\fou{\oper{G}}(\mathfrak{F}\oper{S}\vec{F} + \vec{k}\cdot\mathcal Z_{\vec{k}})$$
   \begin{block}{\huge\centering Triply Periodic}
     \centering $\fou{\oper{G}}_{\text{3D}} :=\eta^{-1}k^{-2}\left(\mathbb{I} - \frac{\vec{k}\otimes\vec{k}}{k^2}\right)$
   \end{block}
@@ -822,15 +823,15 @@
     \begin{column}{0.5\linewidth}
       \begin{itemize}
       \item<1-> Quasi two-dimensional (q2D)
-      \item<4-> Doubly periodic (DP)
+      %\item<4-> Doubly periodic (DP)
       \end{itemize}
       \begin{overlayarea}{\linewidth}{0.5\paperheight}
         \only<1-3>{\includesvg[width=0.9\linewidth]{gfx/q2D}\\
           \begin{center}
-            q2D: $\delta\rightarrow 0$. 3D fluid, 2D particles
+            q2D: $\delta\rightarrow 0$.\\3D fluid, 2D particles
           \end{center}
           }
-        \only<4>{\includesvg[width=0.9\linewidth]{gfx/dpstokes_sketch}}
+          %\only<4>{\includesvg[width=0.9\linewidth]{gfx/dpstokes_sketch}}
       \end{overlayarea}
     \end{column}
     \begin{column}{0.5\linewidth}
@@ -863,8 +864,8 @@
       \begin{center}
         \only<1-7>{$\vec{u}_i = \oper{J}_{\vec{\ppos}_i}\mathfrak{F}^{-1}\fou{\oper{G}}_{\text{3D}}(\mathfrak{F}\oper{S}\vec{F} + \vec{k}\cdot\mathcal Z)$}%
         \only<8-9>{$\vec{u}_i = \oper{J}_{\vec{\ppos}_i}\mathfrak{F}^{-1}\left(\fou{\oper{G}}_{\text{3D}}\mathfrak{F}\oper{S}\vec{F} + \fou{\vec{w}}\right)$}
-        \only<10-11>{$\vec{u}_i = \oper{J}_{\vec{\ppos}_i}\mathfrak{F}^{-1}\left(\fou{\oper{G}}_{\qtd}\mathfrak{F}\oper{S}\vec{F} + \fou{\vec{w}}\right)$}
-        \only<12->{$\vec{u}_i = \oper{J}_{\vec{\ppos}_i}\mathfrak{F}^{-1}\left(\fou{\oper{G}}_{\qtd}\mathfrak{F}\left[\oper{S}\vec{F} + \vec{\partial}_{\vec{\ppos}}\oper{S}\left(\kT\right)\right] + \fou{\vec{w}}\right)$}
+        \only<10-11>{$\vec{u}_i = \oper{J}_{\vec{\ppos}_i}^{\parallel}\mathfrak{F}^{-1}\left(\fou{\oper{G}}_{\qtd}\mathfrak{F}\oper{S}^{\parallel}\vec{F} + \fou{\vec{w}}\right)$}
+        \only<12->{$\vec{u}_i = \oper{J}_{\vec{\ppos}_i}^{\parallel}\mathfrak{F}^{-1}\left(\fou{\oper{G}}_{\qtd}\mathfrak{F}\left[\oper{S}^{\parallel}\vec{F} + \vec{\partial}_{\vec{\ppos}}\oper{S}^{\parallel}\left(\kT\right)\right] + \fou{\vec{w}}\right)$}
       \end{center}
     \end{block}
   \end{overlayarea}
@@ -872,9 +873,16 @@
     \begin{column}{0.4\linewidth}
       \includesvg[width=0.9\linewidth]{gfx/q2D}\\
       \begin{center}
-        q2D: $\delta\rightarrow 0$. 3D fluid, 2D particles
+        q2D: $\delta\rightarrow 0$.\\3D fluid, 2D particles
       \end{center}
-      \onslide<11->{$\vec{\partial}_{\vec{\ppos}}\cdot\left[\oper{J}\oper{G}_{\qtd}\oper{S}\right] \neq 0$}
+      \onslide<11->{
+        \begin{equation*}
+        \begin{aligned}
+        \tens{M}_{\qtd} :=&\oper{J}^{\parallel}\oper{G}_{\qtd}\oper{S}^{\parallel}\\
+          \vec{\partial}_{\vec{\ppos}}\cdot \tens{M}_{\qtd} \neq& 0
+        \end{aligned}
+      \end{equation*}
+    }
     \end{column}
     \begin{column}{0.6\linewidth}
       \begin{overlayarea}{\linewidth}{0.7\paperheight}
@@ -882,7 +890,7 @@
           \only<2->{Problems:}
           \begin{enumerate}
           \item<3-> 2D limit implies $F_z\rightarrow \infty$
-          \item<4-> Open boundaries in Z require $L_z\rightarrow\infty$ 
+          \item<4-> Open boundaries in Z require $L_z\rightarrow\infty$
           \end{enumerate}
           \only<5->{Solution:}
           \begin{enumerate}
@@ -892,8 +900,8 @@
         \only<7-12>{
           Eliminate Z direction:
           \begin{enumerate}
-          \item<8> Fluctuations via FDT
-          \item<9-11> Preconvolve $\oper{G}$ in Z
+          \item<8-> Fluctuations via FDT
+          \item<9-> Preconvolve $\oper{G}$ in Z
           \item<12-> Introduce thermal drift
           \end{enumerate}
         }
@@ -902,9 +910,9 @@
             $\left\langle\fou{\vec{w}}\otimes \fou{\vec{w}}\right\rangle = 2\kT \fou{\oper{G}}$
           \end{center}
         }
-        \only<9-11>{
+        \only<9-12>{
           \begin{block}{Remember}
-            $\delta_a(\vec{r}) := \phi(r_x)\phi(r_y)\phi(r_z)\rightarrow$ Smeared delta
+            $\delta_a(\vec{r}) := \phi(r_x)\phi(r_y)\onslide<9-10>{\phi(r_z)}\rightarrow$ Smeared delta
           \end{block}
         }
         \only<10>{
@@ -919,13 +927,121 @@
         }
         \only<12>{
           \begin{center}
-            $\vec{f}(\vec{r}) = \oper{S}\vec{F} + \vec{\partial}_{\vec{\ppos}}\oper{S}[\kT]$
+            $\vec{f}(\vec{r}) = \oper{S}^{\parallel}\vec{F} + \vec{\partial}_{\vec{\ppos}}\oper{S}^{\parallel}[\kT]$
         \end{center}
         }
       \end{overlayarea}
     \end{column}
   \end{columns}
 \end{frame}
+\begin{frame}
+  \frametitle{Doubly Periodic Force Coupling Method}
+  \begin{block}{\centering Stokes equations}
+    \begin{overprint}
+      \onslide<1-6>
+      \begin{equation*}
+        \eta \nabla^2\vec{\fvel} =  \nabla \pi - \vec{f}, \qquad   \nabla\cdot\vec{\fvel} = 0%
+      \end{equation*}
+      \onslide<7->
+      \begin{equation*}
+        \eta \left(\partial_z^2-k^2\right)\vec{\fou{\fvel}} =
+        \begin{bmatrix}
+          i\vec{k}\\
+          \partial_z
+        \end{bmatrix}
+        \fou{\pi} - \vec{\fou{f}}, \qquad   [i\vec{k},\partial_z]\cdot\vec{\fou{\fvel}} = 0%
+      \end{equation*}
+    \end{overprint}
+\end{block}
+  \begin{columns}[T]
+    \begin{column}{0.45\linewidth}
+      \begin{minipage}{\linewidth}
+        \includesvg[width=1.1\linewidth]{gfx/dpstokes_sketch}
+        \only<1>{
+          \begin{columns}
+            \begin{column}{0.48\linewidth}
+              \begin{block}{Fluid forcing}
+                \centering $\vec{f}(\vec{r}) = \oper{S}(\vec{r})\vec{F}$
+              \end{block}
+            \end{column}
+            \begin{column}{0.5\linewidth}
+              \begin{block}{Particle velocity}
+                \centering $\vec{u}_i = \oper{J}_{\vec{q}_i}\vec{v}(\vec{r})$
+              \end{block}
+            \end{column}
+          \end{columns}
+        }
+      \end{minipage}
+    \end{column}
+    \begin{column}{0.55\linewidth}
+      \only<10->{
+        Hardships
+        \begin{enumerate}
+        \item<11-> BVP solver
+        \item<12-> Requires Chebyshev space in Z
+          \only<12>{
+            \begin{center}
+                \includesvg[width=0.6\linewidth]{gfx/chebgrid}
+            \end{center}
+          }
+        \item<13-> Walls added as corrections
+          \only<13>{
+            \begin{equation*}
+              \vec{\fvel}^* = \vec{\fvel} + \vec{\fvel}_{\text{corr}} \rightarrow \vec{\fvel}^*(z=\pm H) = 0 
+            \end{equation*}
+          }
+        \item<14-> Fluct. require iterative solver\\
+          \begin{itemize}
+          \item Lanczos: $\sim 10$ Stokes solves
+          \item Thermal drift: 2 Stokes solves 
+          \end{itemize}
+        \end{enumerate}
+      }
+      \begin{overlayarea}{\linewidth}{0.8\paperheight}
+        \only<2-5>{Problems:
+          \begin{enumerate}
+          \item<2-> Unknown Green's function        
+          \item<3-> Cannot use $\mathfrak{F}$ in $Z$
+          \end{enumerate}    
+          \only<4->{Solutions:
+            \begin{enumerate}
+            \item<4-> Solve Stokes directly
+            \item<5-> $\mathfrak{F}$ only in $XY$ plane        
+            \end{enumerate}
+          }
+        }
+        \begin{overlayarea}{\linewidth}{0.2\paperheight}
+          \only<6-8>{
+            \centering $\mathfrak{F}$ only in $XY$ plane
+            \begin{equation*}
+            \begin{aligned}
+              \nabla &\rightarrow \left[ik_x, ik_y, \partial_z\right] := [i\vec{k},\partial_z]\\
+              \vec{f} &\rightarrow \left[\fou{f}_x, \fou{f}_y, f_z\right] := \fou{\vec{f}}(\vec{k}, z)
+            \end{aligned}
+          \end{equation*}
+          }
+          \only<9>{
+            BVP for each $\vec{k}$. Embarrassingly parallel
+          }          
+        \end{overlayarea}
+        \only<8>{
+          \begin{equation*}
+            \nabla^2\pi = \nabla\cdot\vec{f}
+          \end{equation*}
+        }
+        \only<9>{
+          \begin{equation*}
+            \begin{aligned}
+              \left(\partial_z^2-k^2\right)&\fou{\pi} = \left[i\vec{k}, \partial_z\right]\cdot\fou{\vec{f}}\\
+              \onslide<9->{\left(\partial_z \pm k\right)&\fou{\pi}(\vec{k}, z=\pm H) = 0}
+            \end{aligned}
+          \end{equation*}
+        }
+      \end{overlayarea}
+    \end{column}
+  \end{columns}
+\end{frame}
+
 
 \subsection{Electrostatics}
 \begin{frame}
@@ -934,31 +1050,115 @@
   \begin{center}
     \begin{minipage}{0.5\linewidth}    
       \begin{block}{Poisson}
-        \centering $\varepsilon\nabla^2\phi = -f(\vec{r}) = -\oper{S}(\vec{r})\vec{Q}$
+        \centering $\varepsilon_0\nabla^2\phi = -f(\vec{r}) = -\oper{S}(\vec{r})\vec{Q}$
       \end{block}
     \end{minipage}
   \end{center}
   \begin{overlayarea}{\linewidth}{0.5\paperheight}
     \begin{columns}[T]
-      \begin{column}{0.4\linewidth}
+      \begin{column}{0.39\linewidth}
         \begin{block}<2->{Spreading}
           $\oper{S}(\vec{r})\vec{Q} = \sum_i Q_i \delta_a(\vec{\ppos}_i - \vec{r})$
         \end{block}
         \begin{block}<3->{Gaussian sources}
           $\delta_a(\vec{r}) = \frac{1}{(2\pi a^2)^{3/2}} e^{-r^2/(2a^2)}$
-        \end{block}
-        
+        \end{block}        
       \end{column}
-      \begin{column}{0.6\linewidth}
-        \begin{block}<4->{Charges to forces}
+      \begin{column}{0.59\linewidth}
+        \only<4->{
+          \begin{equation*}
+            \vec{E}(\vec{\fpos}) = \partial_{\vec{\fpos}}\phi \rightarrow \fou{\vec{E}} = i\vec{k}\fou{\phi}
+          \end{equation*}
+          \begin{equation*}
+            \vec{F}_i = Q_i\oper{J}_{\vec{\ppos}_i}\vec{E}
+          \end{equation*}
+
+        }
+        \begin{block}<5->{Charges to forces}
           $$\vec{F}_i = Q_i\oper{J}_{\vec{q}_i}\mathfrak{F}^{-1}i\vec{k}\fou{\oper{G}}_P\mathfrak{F}\oper{S}\vec{Q}$$
         \end{block}
-        \only<4->{$$\fou{\oper{G}}_P = \varepsilon^{-1}k^{-2}$$}
-        
+        \only<6->{$$\fou{\oper{G}}_P = \frac{1}{\varepsilon_0 k^2}$$}
       \end{column}
     \end{columns}
   \end{overlayarea}
-  \only<1-3>{\footnotesize Supervector notation. Charges $\vec{Q} := \{\vec{Q}_1,\dots,\vec{Q}_N\}$}
+  \onslide<1-3>{\footnotesize Supervector notation. Charges $\vec{Q} := \{Q_1,\dots,Q_N\}$}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Doubly Periodic Electrostatics}
+  \framesubtitle{Force Coupling Method for the Poisson equation}
+  \begin{center}
+    \begin{minipage}{0.5\linewidth}    
+      \begin{block}{Poisson}
+        \only<1-8>{\centering $\varepsilon_0\nabla^2\phi = -f(\vec{r}) = -\oper{S}(\vec{r})\vec{Q}$}%
+        \only<9->{\centering $\varepsilon_0(\partial_z^2-k^2)\fou{\phi} = -\fou{f}$}%
+      \end{block}
+    \end{minipage}
+  \end{center}
+  \begin{overlayarea}{\linewidth}{0.5\paperheight}
+  \begin{columns}[T]
+    \begin{column}{0.39\linewidth}
+      \begin{center}
+        \includesvg[width=\linewidth]{gfx/dppoisson_sketch}
+      \end{center}
+      \only<2->{
+        \begin{equation*}
+          \footnotesize
+          \begin{aligned}
+            &{\color{blue} \varepsilon_0E^z(z = 0)} - {\color{ForestGreen}\varepsilon_bE^z(z=0)} = -{\color{ForestGreen}\sigma_b}\\
+            &{\color{blue}\varepsilon_0E^z(z = H)} - {\color{BrickRed}\varepsilon_tE^z(z = H)} = {\color{BrickRed}\sigma_t}
+          \end{aligned}
+        \end{equation*}
+      }
+    \end{column}
+    \begin{column}{0.59\linewidth}
+      \begin{overlayarea}{\linewidth}{0.8\paperheight}
+        \only<3-7>{Problems:
+          \begin{enumerate}
+          \item<3-> Unknown Green's function        
+          \item<4-> Cannot use $\mathfrak{F}$ in $Z$
+          \end{enumerate}    
+          \only<5->{Solutions:
+            \begin{enumerate}
+            \item<6-> Solve Poisson directly
+            \item<7-> $\mathfrak{F}$ only in $XY$ plane        
+            \end{enumerate}
+          }
+        }
+        \begin{overlayarea}{\linewidth}{0.2\paperheight}
+          \only<8-9>{
+            \centering $\mathfrak{F}$ only in $XY$ plane
+            \begin{equation*}
+              \begin{aligned}
+                \nabla &\rightarrow \left[ik_x, ik_y, \partial_z\right] := [i\vec{k},\partial_z]\\
+                f &\rightarrow  \fou{f}(\vec{k}, z)
+              \end{aligned}
+            \end{equation*}
+          }
+          \only<10->{
+            Dielectric jumps $\rightarrow \phi = \phi^*+\phi^c$\\
+            Free space ($\varepsilon_0=\varepsilon_b=\varepsilon_t$):
+            \begin{equation*}
+              \begin{aligned}
+                &\epsilon_0\nabla^2\phi^* = -f + \delta(z)\sigma_b + \delta(z-H)\sigma_t\\
+                & (\partial_z-k)\phi(\vec{k}, 0) = 0
+              \end{aligned}
+            \end{equation*}
+            Correction:
+            \begin{equation*}
+              \begin{aligned}
+                &\nabla^2\phi^c = 0\\
+                & \varepsilon_0\partial_z\phi^c(z\rightarrow 0^+) -\varepsilon_b\partial_z\phi^c(z\rightarrow 0^-) = m^b_E
+              \end{aligned}
+            \end{equation*}            
+            }
+        \end{overlayarea}
+      \end{overlayarea}
+
+    \end{column}
+  \end{columns}  
+\end{overlayarea}
+\onslide<1>{\footnotesize Supervector notation. Charges $\vec{Q} := \{Q_1,\dots,Q_N\}$}
 \end{frame}
 %\section{Introduction}
 %\begin{frame}
@@ -1075,9 +1275,12 @@
 
 \begin{frame}
   \frametitle{What makes UAMMD stand out}
-  
+  \Large
+  \begin{center}
+    UAMMD: A CUDA/C++ library for complex fluids.
+    \rule{0.7\textwidth}{1.4pt}
+  \end{center}
   \begin{itemize}
-    \Large
   \item Header only and library-like
   \item Lightweight with minimal dependencies
   \item Hackable
@@ -1166,10 +1369,10 @@
     \onslide<6>
     \begin{code2}[]{label=code:module}
       ...
-      auto electro = std::make_shared<Poisson>(pd,
-                                              /*Parameters*/);
+      auto elec = std::make_shared<Poisson>(pd,/*Parameters*/);
+      elec->sum({.force=true, .energy=false, .virial=false});
       //Exposed by every Integrator
-      md->addInteractor(electro); 
+      md->addInteractor(elec);
       md->forwardTime();
       ...      
     \end{code2}
@@ -1185,6 +1388,35 @@
   \frametitle{Available interactions}
   \includesvg[width=\linewidth]{gfx/sketchUAMMD_interactors}
   \note{We are already generalizing. Talk about the new interactions people are including: Optohydro, magnetism, coarse-grained potentials...}
+\end{frame}
+
+\begin{frame}
+  \frametitle{UAMMD's online presence}
+  \framesubtitle{Git repository}
+  {\centering {\color{blue} \url{https://github.com/RaulPPelaez/uammd}}}
+  \begin{figure}
+    \centering
+    \only<1>{\includegraphics[height=0.7\paperheight]{gfx/uammdgithub}}
+    \only<2-3>{
+      \onslide<3->{\includegraphics[height=0.7\paperheight]{gfx/uammdtutorial1}}
+      \onslide<2->{\includegraphics[height=0.7\paperheight]{gfx/uammdexamples}}
+    }
+    \only<4>{
+      \onslide<4->{\includegraphics[height=0.7\paperheight]{gfx/uammdtutorial1}}
+      \onslide<4->{\includegraphics[height=0.7\paperheight]{gfx/uammdtutorial2}}
+    }
+    
+  \end{figure}
+\end{frame}
+
+\begin{frame}
+  \frametitle{UAMMD's online presence}
+  \framesubtitle{Documentation}
+  {\centering {\color{blue} \url{https://uammd.readthedocs.io}}}
+  \begin{figure}
+    \centering
+    \includegraphics[height=0.7\paperheight]{gfx/uammdreadthedocs}
+  \end{figure}
 \end{frame}
 
 \section{Conclusions}
