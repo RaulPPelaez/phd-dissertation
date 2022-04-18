@@ -1,4 +1,7 @@
 \documentclass[xcolor=dvipsnames]{beamer}
+\usepackage{pgfpages}
+\setbeameroption{show notes on second screen}
+
 \usepackage[outline]{contour}
 \usepackage{transparent}
 \usepackage{pgfplots}
@@ -143,18 +146,34 @@
     \centering
     \includegraphics[width=0.25\linewidth]{UAMlogo}
   \end{figure}
+  \note{This is a GPU. A powerful hardware with a unique programming model. Harvesting its tremendous raw power requires developing algorithms and software specifically tailored for it. My work during these past years has been devoted to exploiting the GPU to simulate of complex fluids. Now, before we continue, let me give you a summary of this talk. }
 \end{frame}
 
 %\section{This thesis main contributions}
 
+\section{Introduction}
 
 \begin{frame}
   \frametitle{Talk outline}
-  \tableofcontents[
-  sectionstyle=show/show,
-  subsectionstyle=hide/hide/hide,
-  subsubsectionstyle=hide/hide/hide/hide
-  ]
+  \only<1>{\tableofcontents[
+    sectionstyle=show/shaded,
+    subsectionstyle=show/show/hide,
+    subsubsectionstyle=show/show/show/hide
+    ]
+  }
+  \only<2>{
+    \tableofcontents[
+    sectionstyle=show/show,
+    subsectionstyle=hide/hide/hide,
+    subsubsectionstyle=hide/hide/hide/hide
+    ]
+  }
+  \note{
+    \begin{itemize}
+    \item I will start by introducing what a complex fluids is and why we care about them.
+      \item asdas
+    \end{itemize}
+  }
 \end{frame}
 
 
@@ -173,16 +192,6 @@
 %  \end{itemize}
 %\end{frame}
 %
-
-\section{Introduction}
-\begin{frame}
-  \frametitle{Talk outline}
-  \tableofcontents[
-  sectionstyle=show/shaded,
-  subsectionstyle=show/show/hide,
-  subsubsectionstyle=show/show/show/hide
-  ]
-\end{frame}
 
 \subsection{Complex fluids}
 \begin{frame}
@@ -462,7 +471,7 @@
         \onslide*<3->{%
           \begin{itemize}
           \item FFT:\\ cuFFT (library calls)
-          \item IBM:\\ Hand made%
+          \item Coupling:\\ Hand made%
           \end{itemize}
         }%
       \item {\small\transparent{0.5} Tree-based methods}
@@ -575,7 +584,7 @@
 
 \begin{frame}
   \frametitle{Particle-grid coupling}
-  \framesubtitle{Performance}
+  \framesubtitle{Spreading: Performance}
   \centering
   \includegraphics[width=0.6\linewidth]{gfx/ibm_comp_dens1_2080ti}\\
   \begin{minipage}{0.4\linewidth}
