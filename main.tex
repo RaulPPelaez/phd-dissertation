@@ -146,7 +146,7 @@
     \centering
     \includegraphics[width=0.25\linewidth]{UAMlogo}
   \end{figure}
-  \note{This is a GPU. A powerful hardware with a unique programming model. Harvesting its tremendous raw power requires developing algorithms and software specifically tailored for it. My work during these past years has been devoted to exploiting the GPU to simulate of complex fluids. Now, before we continue, let me give you a summary of this talk. }
+  \note{This is a GPU. A powerful hardware with a unique programming model. Harvesting its tremendous raw power requires developing algorithms and software specifically tailored for it. My work during these past years has been devoted to exploiting the GPU for the simulation of complex fluids. Now, before we continue, let me give you a summary of this talk. }
 \end{frame}
 
 %\section{This thesis main contributions}
@@ -170,8 +170,11 @@
   }
   \note{
     \begin{itemize}
-    \item I will start by introducing what a complex fluids is and why we care about them.
-      \item asdas
+    \item I will start by introducing what complex fluids are, with an overview of the numerical and mathematical machinery we use to simulate them in a computer.
+    \item Then I will talk about the main algorithmic hardships that arise in this field and I will focus on how to solve some of them with a GPU.
+    \item Part of my contributions consist on the developing of new GPU-enabled algorithms for hydrodynamics and electrostatics in confined geometries, which I will also introduce.
+    \item The main contribution of my work lies in UAMMD, a GPU software framework for complex fluids that I built from scratch during these years and that includes, among others, all the algorithms and solvers that I will mention in this talk.
+      \item I will then end with some conclusions.
     \end{itemize}
   }
 \end{frame}
@@ -214,6 +217,22 @@
       {\fontsize{4.5}{12} \selectfont [Courtesy of Pablo Palacios] ------------------------ [Courtesy of Berta Tinao] ----------------------------------------- [Courtesy of Pablo Palacios]}
     }
   \end{figure}
+  \note<1>{
+    \scriptsize
+    \begin{itemize}
+    \item I showed you what a GPU is at the start. In order to understand the rest of the title you also need to know what a complex fluid is.
+    \item Although its definition is a little more general, we understand a complex fluids as the coexistence between a solid and a liquid phase. And note that with solid, we usually mean soft, such as a colloidal particle or a cell's lipidic membrane.
+    \item This broad definition encloses a wide variety of systems, many times of biological nature. In this slide I show you a bunch of examples, all of them taken from past and ongoing works in our group.
+    \item Starting up we can see coarse-grained representations of a lipid bilayer, a star polymer in a shear flow, a nano dumbell swimming and spinning in a fluid under optically-induced vortexes. A virus capsid, filled with a particular protein, which is being pressed by an AFM tip (the video is not long enough, but the virus ends up exploding under the pressure). Next we have a group of lipidic vesicles, one of them contains a ferromagnetic particle that, when subject to a magnetic field, spins the vesicle. This allows to somewhat control the locomotion of the vesicles. The final picture shows the diffusion of the concentration of a colloidal suspension under strong two-dimensional confinement in different regimes.
+    \end{itemize}    
+  }  
+  \note<2>{
+    \begin{itemize}
+    \item Here, the figure to the right shows a model of the rotating vesicles a member of group, Pablo, is studying now, in part using the tools and algorithms that I will shortly introduce.
+    \item Pablo has also studied other kinds of magnetic nanoparticles.
+    \item These examples showcase enormous span of the spatio-temporal scales associated with complex fluids. Sometimes we need to focus on single polymers, or describe a single polymer in detail. Other times we want to model vesicles that are almost visible to the naked eye.
+    \end{itemize}
+  }
 \end{frame}
 
 
@@ -224,7 +243,7 @@
   \begin{figure}
     \centering
     \begin{tikzpicture}
-      \node[anchor=south west, inner sep=0] (image) {\includesvg[width=0.8\linewidth]{gfx/landscape}};
+      \only<1-5>{\node[anchor=south west, inner sep=0] (image) {\includesvg[width=0.8\linewidth]{gfx/landscape}};}
       \begin{scope}[shift={(image.south west)},x={(image.south east)},y={(image.north west)}]
         %\draw foreach \xy in {0,0.1,...,1.001}{(\xy,0) -- node[pos=0,below]{\pgfmathprintnumber{\xy}} (\xy,1)(0,\xy) -- node[pos=0,left]{\pgfmathprintnumber{\xy}} (1,\xy)};
         \only<2>{\filldraw[red, opacity=0.6] (0.12,1) rectangle (0.5,0.07) node[midway] (A) {};\node[above=50pt of A, black]{\contourlength{1pt}\contour{white}{\textbf{Fully Lagrangian}}};}
@@ -233,7 +252,38 @@
       \end{scope}
     \end{tikzpicture}
     \caption{Figure courtesy of Rafael Delgado-Buscalioni.}
-  \end{figure}  
+  \end{figure}
+  \note<1>{
+    \begin{itemize}
+    \item The modeling and simulation of complex fluids thus greatly exceeds the scope of the typical computation window. Speaking in terms of this numerical landscape we cannot specialize in a single window. If we want to model a complex fluid, we must take into account sizes ranging from nanometers to meters and times going from nanoseconds to seconds. And even then, we are restricted to a narrow-ish area of the lanscape, being unable to, for instance, simulate a nanometer-sized system for several hours of physical time.
+    \item I claim that my software, UAMMD, covers the whole range of the complex-fluid domain, and I hope to convince you during this talk that this is true.
+    \item Anyway, countless numerical and mathematical techniques exists depending on our window of interest, and their naming scheme can sometimes be a little obtuse.      
+    \end{itemize}
+  }
+  \note<2>{
+    \begin{itemize}
+    \item Broadly speaking, we can categorize the landscape into three families of methods.
+    \item When studying small systems, we usually choose a fully Lagrangian scheme, meaning that we track the evolution of individual particles, or markers.      
+    \end{itemize}
+  }
+  \note<3>{
+    \begin{itemize}
+    \item On the contrary, when focusing on macroscopic systems we usually choose a fully Eulerian description, where we loose track of individual particles and instead describe continuous fields.      
+    \end{itemize}
+  }
+  \note<4>{
+    \begin{itemize}
+    \item In the middle, in what we call the mesoscale, there is a mixed domain of Eulerian-Lagrangian methods, where we describe both a group of particles and continuous fields that are somehow coupled.
+    \item This is the realm of hydrodynamics, where most of the examples I showed you take place.
+    \item I would like to point out now that my algorithmic contributions lie in this regime.
+    \end{itemize}
+  }
+  \note<5>{
+    \begin{itemize}
+    \item Let us focus in the red area, covering an, in principle, disparate range of descriptions all owning to complex fluids.
+    \item If we start at the atomic scale and want to climb up the spatio-temporal scale of modeling we can make use of coarse graining techniques, where we want to somehow average out the fast degrees-of-freedom that are of no interest to us. For instance, if we are describing a submarine running under the sea (by all means a complex fluid) we really want to leave the individual water atoms out of our description.
+    \end{itemize}
+    }
 \end{frame}
 
 \subsubsection{Coarse-grained levels of description}
@@ -243,8 +293,13 @@
   \begin{figure}
     \centering
     \includesvg[width=0.55\linewidth]{gfx/multiscale}
-  \end{figure}  
+  \end{figure}
+  \note{
+    In particular, we can cover the whole range using the following four levels of coarse-grained description. Going through them will help us understand how we can design a framework that covers them all.
+    }
 \end{frame}
+
+
 \begin{frame}[t]
   \frametitle{Complex fluids}
   \framesubtitle{Usual levels of coarse-grained description}
@@ -282,7 +337,7 @@
       \item<4-> $M(\vec{q}_{ij})$: Mobility tensor.
       \end{itemize}
       \centering      
-      \only<1-4>{\textbf{Tipical timescale:}\newline}
+      \only<1-4>{\textbf{Typical timescale:}\newline}
       \only<1>{$\tau \sim 10^{-12}s$}
       \only<2>{$\tau \sim 10^{-\{9-6\}}s$}
       \only<3>{$\tau \sim 10^{-5}s$}
@@ -339,6 +394,49 @@
   \only<4>{
     $d\vec{\noise}$: Wienner increments, $\mathcal{N}(0,dt)$
   }
+
+  \note<1-5>{
+    \begin{itemize}
+      \only<1>{
+      \item At the lowest level (the most detailed one) we find the microscopic level, where we need to describe the positions and velocities of every atom (or small group of atoms) involved in the system. This includes every water molecule conforming the fluid in addition to the particles embedded in it. The Newton equations of motion govern this level, where the inter-particle forces are of atomic origin. Notice that this is a fully Lagrangian description.
+      \item The typical timescale is given by the fast-moving fluid particles.
+      \item BTW, note that I am using the so-called supervector notation here, where a symbol without a subindex often refers to the list of all related quantities. As opposed to, for instance, $\vec{q}_i$, which refers to a specific particle called ``i''. I will abuse this notation throughout this talk, so beware!.
+      }
+      \only<2>{
+        \footnotesize
+      \item Going up we have the hydrodynamic level, where the individual degrees of freedom of the fluid particles are lost and we are left, instead, with a continuous velocity field representing them. The math tells us that when we do this, we must reintroduce the lost degrees-of-freedom as thermal fluctuations.
+      \item Thus this is an Eulerian-Lagrangian formalism and is governed by the Navier-Stokes equations describing the fluid. A fluid which exists in a two-way coupling with a group of embedded particles.
+      \item This coupling is far from trivial, but in essence it consists of the particles communicating their forces to the fluid via a force density and, in return, the particles following the fluid by sampling its surrounding velocity. $V_p$ here is the volume of a particle (whatever that means).
+      \item The typical timescale is given by the speed of sound of the fluid as well as its vorticity. In other words, how fast it communicates information.
+      }
+      \only<3>{
+      \item When particles move so slowly compared to the solvent characteristic times, hydrodynamic interactions,
+        which were previously mediated by a velocity field, are effectively instantaneous. We call this the Langevin level.
+      \item We eliminate the fluid velocity, transforming it into a friction kernel (and of course, fluctuations). Typically, this friction kernel will be defined pairwise, although it could simply be a constant, or depend on the entire particle configuration.
+      \item Only the positions and momenta of the particles remain as relevant variables (taking us back to a Lagrangian description once again),
+        which obey a Langevin equation.
+      \item The characteristic decorrelation time of the particle's velocities governs this scale.
+      }
+      \only<4>{
+      \item At some point in our upwards journey, the particle positions change slowly enough that their velocity decorrelates
+        effectively instantaneously, thus inertia can be disregarded and positions are the only relevant variable.
+      \item Here, the friction kernel has morphed into a mobility tensor (which is the inverse of a friction) and is typically dependent on the position of every particle. Although once again, it might be a simple constant, for instance if we neglect hydrodynamic interactions.
+      \item The dynamics are described by the Brownian Dynamics equations of motion (an over-damped Langevin equation).
+      \item The diffusion time of the particles dominates this level.
+      }
+      \only<5>{
+      \item Let me show you again all the levels of description, which overall allows us to describe a really wide timescale range.
+      \item Now, there is a not-so-hidden theme here that has allowed me to design a software framework encasing all of this.
+        Have you noticed it?
+      }
+    \end{itemize}
+  }
+  \note<6>{
+    \begin{itemize}
+    \item In all instances, we can vaguely describe the situation as a ``group of interacting \emph{particles} with a \emph{state} that \emph{evolves}''. Whatever a particle, its state or how it evolves mean in each case. And it is worth noticing this definition also includes other schemes I have not mentioned, such as a Monte Carlo simulation.
+    \item Note that even when a continuous field is present, we can interpret that it only exists as a proxy to communicate the particles. Think of a particle that moves a fluid, which in turns moves the rest of the particles (and in fact this movement reflects back to original particle and so on and so forth).
+    \end{itemize}
+  }
 \end{frame}
 
 \section{Building blocks of a complex fluid simulation algorithm}
@@ -349,6 +447,13 @@
   subsectionstyle=show/show/hide,
   subsubsectionstyle=show/show/show/hide
   ]
+  \note{
+    \begin{itemize}
+    \item Later, I will show you how I leveraged this sentence to create UAMMD, but first I want to discuss the other side of a complex fluid simulation. We have seen about the kind of solvers that we can use to unravel the dynamics of particles for simulations in different spatio-temporal windows, but there is a long way between having equations for the solvers and writing a GPU code for them.
+    \item Besides the mathematical hardships we may face along the way (and we will see some of them later on), we have to tame the algorithmic complexity of the interactions, them being either those arising from the dynamics (such as hydrodynamics) or from particle-particle couplings (such as sterics or electrostatics).
+    \item In this regard, we basically encounter the same set of three problems again and again, which I would like to go through in this next section.
+    \end{itemize}
+  }
 \end{frame}
 
 
@@ -386,6 +491,12 @@
       }
     \end{column}
   \end{columns}
+  \note<1-2>{
+    \begin{itemize}
+    \only<1>{\item We have three types of problems to solve. Short- and long-range interactions and Eulerian-Lagrangian coupling.}
+    \only<2>{\item The first one arises, for instance, with steric interactions.}    
+    \end{itemize}
+  }
 \end{frame}
 
 \subsection{Short range}
