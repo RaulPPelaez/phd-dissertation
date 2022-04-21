@@ -977,7 +977,7 @@
   }
   \note{
     \begin{itemize}
-    \item The Stokes equation is the inertia-less version of the Incompressible Navier Stokes equations. And can be understood as a balance between the momentum diffusion of the fluid and the stress that it is subjected to.
+    \item The Stokes equations are the inertia-less version of the Incompressible Navier Stokes equations. And can be understood as a balance between the momentum diffusion of the fluid and the stress that it is subjected to.
     \item This stress comes from its internal pressure and any external stress, such as forces and thermal fluctuations.
     \item Here, Z is a tensor that is designed to comply with fluctuation-dissipation balance.
     \end{itemize}
@@ -1051,7 +1051,28 @@
     \end{columns}
     \note{
       \begin{itemize}
-      \item asdas
+        \only<1-2>{
+        \item Interesting for us is that, if we couple the Stokes equations with a series of particles we can prove that the equations for the dynamics of the particles are equivalent to those of Brownian Dynamics.
+        \item In particular, we are using the Immersed Boundary formalism. First by spreading particle forces as an external fluid forcing. Then imposing a no-slip condition on the surface of the particles by making them follow the fluid exactly.
+        }
+        \only<3>{
+        \item Let me dwell a little bit more into this. We use the Green formalism to construct an operator, G, that transforms forces to velocities in the fluid.
+        }
+      \only<4>{\item Where this operator is applied via a convolution.}
+      \only<5>{\item From the particle's perspective, putting all the operators together we can write the following equation. Where we input particle forces and get back particle displacements. We call this the Force Coupling Method.}
+      \only<6>{
+      \item As I mentioned earlier, by carefully defining the mobility like this we can see that this form is, in fact, equivalent to the Brownian Dynamics equation.
+      \item We are still far from done, though. Writing the mobility operator in a functional form...}
+      \only<7>{
+      \item ...tells us that in order to compute just one element of the mobility (how one particle responds to a force acting on another one), we need to perform a double convolution.
+      }
+      \only<8>{
+      \item And I have not even showed you yet the form of the Green operator. Yes, that is an inverse laplacian, whatever that means.
+      }
+      \only<9>{
+      \item To be fair, sometimes we do have a "simple" expression for G, but integrating over all space for every point in the domain is still a no go.
+      }
+      \item 
       \end{itemize}
     }
 \end{frame}
@@ -1069,6 +1090,16 @@
       \node (c) at (3.2, 2){ $\mathfrak{F}$: Fourier transform};
     }
   \end{tikzpicture}
+  \note{
+    \begin{itemize}
+    \item Turns out there is a quite efficient way to overcome this if we impose periodic boundary conditions.
+    \item In that case we can go to Fourier space (which is fast in the GPU).
+    \item And in Fourier space convolutions are just algebraic multiplications. So we can convolve "for free".
+    \item Bonus point, fluctuations are also free for us to compute.
+    \item So we do the cheap stuff, spreading and interpolation, in real space and leave the convolutions and the noise to Fourier space.
+    \item Finally, in this specific case, we have an analytic form of the Greens function in Fourier space.
+    \end{itemize}
+  }
 \end{frame}
 
 \begin{frame}
@@ -1119,8 +1150,28 @@
         \end{minipage}
       \end{overlayarea}
     \end{column}
-  \end{columns}
+  \end{columns}  
+  \note<1>{
+    \begin{itemize}
+    \item Now I want to introduce some modifications to the Force Coupling Method for other kinds of geometries.
+    \item I will start with what we call a quasi two dimensional system.
+    \item Imagine a fluid that is periodic in the plane but open in the perpendicular direction.
+    \item We embed particles in this fluid and confine them with some external potential. The quasi two dimensional limit happens when this force becomes a hard constraint and the particles move strictly in a plane.
+    \end{itemize}
+  }  
+  \note<2>{
+    \begin{itemize}
+    \item This limit presents a series of abnormal properties that are worth studying. For instance, if we look at the collective diffusion, we see how it diverges with the wave number as we go from an unconfined system to a strictly confined one.
+    \end{itemize}
+  }
+  \note<3>{
+    \begin{itemize}
+    \item Collective diffusion speaks of the correlation between density perturbations, its divergence in a quasi two dimensional system translates into a drastic enhancement of the dispersion when compared with a fully two dimensional system.
+    \end{itemize}
+  }
 \end{frame}
+
+
 \begin{frame}
   \frametitle{Force Coupling Method in quasi 2D}
   \begin{overlayarea}{\linewidth}{0.2\paperheight}
@@ -1143,7 +1194,7 @@
         \begin{equation*}
         \begin{aligned}
         \tens{M}_{\qtd} :=&\oper{J}^{\parallel}\oper{G}_{\qtd}\oper{S}^{\parallel}\\
-          \vec{\partial}_{\vec{\ppos}}\cdot \tens{M}_{\qtd} \neq& 0
+          \kT \vec{\partial}_{\vec{\ppos}}\cdot \tens{M}_{\qtd} \neq& 0
         \end{aligned}
       \end{equation*}
     }
@@ -1197,7 +1248,21 @@
       \end{overlayarea}
     \end{column}
   \end{columns}
+  \note<1>{Let us see how we can adapt the Force Coupling Method to this confined regime.}
+  \note<2>{We cannot use triply periodic algorithm directly because in doing so we would have to...}
+  \note<3>{...make the confining force infinite}
+  \note<4>{And increase the simulation domain to mimic an open boundary.}
+  \note<5>{Both of these problems disappear if we eliminate the Z direction from our description.}
+  \note<6>{Doing so requires a series of changes.}
+  \note<7>{First, lets get fluctuations out of the convolution. We can reintroduce them later ad-hoc with some form that satisfies flucuation-dissipation balance.}
+  \note<8>{Now we can use the fact that particles are not allowed to leave the plane and preconvolve them in Z. Remember that the spreading kernel is separable in the three components like this. }
+  \note<9,10>{Since the kernel is analytical (in particular we use a Gaussian), and we have the expression of the three-dimensional Greens function, we can simply integrate in the Z direction to get a new Greens function defined only in the plane. Note that spreading and interpolation now happen also in the plane.}
+  \note<11>{We end up with a purely two-dimensional description with an analytic form for G. Alas, if we study the mobility, defined as we did before, we see that its divergence, the thermal drift, is different from zero. This speaks of the fact that the flow in the plane is effectively compressible.}
+  \note<12>{It is not trivial to show that the thermal drift, that comes from the confining force, appears as an entropic force coming from a pressure gradient and has this particular shape.
+    This concludes the adaptation of the Force Coupling method to quasi two-dimensional geometries. And it is worth mentioning that we have some lee-way when choosing the Green's function here, allowing to reuse the same algorithm for other kinds of strongly confined systems. Such as when the fluid is also two dimensional.}  
 \end{frame}
+
+
 \begin{frame}
   \frametitle{Doubly Periodic Force Coupling Method}
   \begin{block}{\centering Stokes equations}
@@ -1304,6 +1369,26 @@
       \end{overlayarea}
     \end{column}
   \end{columns}
+  \note<1>{
+    \begin{itemize}
+    \item The quasi two-dimensional framework is based on the assumption that the embedded particles are not allowed to leave the plane. It is of no use if we want to simulate something anisotropic, like a lipid bilayer.
+    \item I will now introduce a Force coupling-like method to simulate a doubly periodic domain. That is periodic in the plane and open in the third direction, while having an arbitrary width.
+    \item We will again use the same Stokes equations, but changing the boundary conditions requires a lot of rework.
+    \end{itemize}
+  }
+  \note<2>{For starters, we do not know the Green's function, and our previous preconvolution trick does not apply.}
+  \note<3>{Boundaries are not periodic in Z, so Fourier is not going to help there.}
+  \note<4>{Our solution is to solve the Stokes equation without using the Greens formalism.}
+  \note<5>{And the trick lies in Fourier transforming only in the periodic directions.}
+  \note<6>{Lets do just that. Now the different quantities depend on a wave vector and a height.}
+  \note<7>{And the Stokes equation is transformed into a set of equations independent for each wave vector.}
+  \note<8>{There are two unknowns in the Stokes equation: velocity and pressure. But we can use the incompressibility condition to eliminate the pressure.}
+  \note<9>{We end up with a set of independent Boundary Value Problems for the pressure (one for each wave vector). Once we have the pressure, we replace it in the Stokes equation and solve for the velocity. Then we transform that velocity back to real space and interpolate to the particles as usual.}
+  \note<10>{This is easier said than done, though.}
+  \note<11>{Although embarrassingly parallel, the BVP solver is not straight-forward to encode in a GPU.}
+  \note<12>{In particular, it involves defining the Eulerian fields in a Chebyshev grid in the Z direction and performing a so-called fast Chebyshev transform, which is similar to a Fast Fourier transform.}
+  \note<13>{If we want different boundary conditions, such as no-slip walls, we must add them as a correction.}
+  \note<14>{Finally, we only know how to add fluctuations via iterative solvers, which require several Stokes solves. And similarly to the quasi 2D case, we also have to add thermal drift, which involves another couple of solves. All in all, we end up again with a mechanism to transform particle forces to velocities that scales linearly with the number of particles. This time for a doubly periodic environment.}   
 \end{frame}
 
 
@@ -1346,6 +1431,13 @@
     \end{columns}
   \end{overlayarea}
   \onslide<1-3>{\footnotesize Supervector notation. Charges $\vec{Q} := \{Q_1,\dots,Q_N\}$}
+  \note<1>{Now I will shift the focus to electrostatics. I want to show you how we can employ our recently our tricks to other equations. In particular, the Force Coupling Method for the Stokes equation has an almost one-to-one simile in the Poisson equation.
+  Here I am showing the Poisson equation for the potential of a domain in the presence of a charge density. epsilon is the permittivity of the medium. We will start with triply periodic boundary conditions.}
+  \note<2>{This time, instead of spreading forces, we will be spreading particle charges. Which is easier, since are spreading only one value, instead of three.}
+  \note<3>{Where we typically model our charges as Gaussian clouds.}
+  \note<4>{Then, instead of interpolating velocities, we now interpolate electric fields. Which are trivial to compute once we solve the potential, moreover in Fourier space.}
+  \note<5>{In the end, we end up with a mechanism to transform particle charges to particle forces that is quite similar to what we have been seeing up until now.}
+  \note<6>{Bonus point, the (triply periodic) Green's function is now much more simple.}
 \end{frame}
 
 \begin{frame}
@@ -1408,100 +1500,27 @@
                 & (\partial_z-k)\phi(\vec{k}, 0) = 0
               \end{aligned}
             \end{equation*}
-            Correction:
-            \begin{equation*}
-              \begin{aligned}
-                &\nabla^2\phi^c = 0\\
-                & \varepsilon_0\partial_z\phi^c(z\rightarrow 0^+) -\varepsilon_b\partial_z\phi^c(z\rightarrow 0^-) = m^b_E
-              \end{aligned}
-            \end{equation*}            
+%            Correction:
+%            \begin{equation*}
+%              \begin{aligned}
+%                &\nabla^2\phi^c = 0\\
+%                & \varepsilon_0\partial_z\phi^c(z\rightarrow 0^+) -\varepsilon_b\partial_z\phi^c(z\rightarrow 0^-) = m^b_E
+%              \end{aligned}
+%            \end{equation*}            
             }
         \end{overlayarea}
       \end{overlayarea}
-
     \end{column}
   \end{columns}  
 \end{overlayarea}
 \onslide<1>{\footnotesize Supervector notation. Charges $\vec{Q} := \{Q_1,\dots,Q_N\}$}
+\note<1>{And to finish with this section, I want to showcase how we can again use this formalism for a doubly periodic domain. Along with hydrodynamics, we can use these algorithms to model things like ionic channels in a cellular membrane.}
+\note<2>{We developed an algorithm for doubly periodic electrostatics, translating the lessons we learned for hydrodynamics. Now instead of no-slip walls we have charged surfaces and permitivity jumps.}
+\note<3-7>{We have the same problems as before, and we solve them in the exact same way.}
+\note<8>{Eventually, we end up with a BVP that is equivalent to the one we had to solve for the pressure in Stokes.
+This algorithm also comes with similar hardships as the Stokes one: We need to solve BVPs, different boundary conditions are added as corrections (which can be quite dense mathematically).}
 \end{frame}
-%\section{Introduction}
-%\begin{frame}
-%  \frametitle{\insertsection}
-%  \begin{itemize}
-%  \item Outline
-%  \item Physics, algorithms and implementation
-%  \item This thesis contributions
-%  \end{itemize}
-%\end{frame}
-%
-%\subsection{Complex fluids}
-%\begin{frame}
-%  \frametitle{\insertsubsectionnavigation{\linewidth}}
-%  \begin{itemize}
-%  \item What a complex fluid is and why we care
-%  \item Coarse-graining
-%  \end{itemize}
-%\end{frame}
-%\subsubsection{A typical system of interest}
-%\begin{frame}
-%  \frametitle{\insertsubsectionnavigation{\linewidth}} 
-%  \framesubtitle{\insertsubsubsection}
-%  \begin{itemize}
-%  \item ``We want to study this particular system (a virus?, QCM?)''
-%  \item Problems that arise when trying to simulate this system
-%  \item The message is: We need new theory and algorithms. If we carefully design a software for a system like this, we end up with something that is also valid for things like MD,  SPH, DPD,...
-%  \end{itemize}
-%\end{frame}
-%\subsection{High performance computing in complex fluids}
-%\begin{frame}
-%  \frametitle{\insertsubsectionnavigation{\linewidth}} 
-%  \begin{itemize}
-%  \item The GPU
-%  \item Other software packages
-%  \item Trying to keep it simple
-%  \end{itemize}
-%\end{frame}
-%
-%
-%\section{The different ingredients of a complex fluid simulation}
-%
-%\begin{frame}
-%  \frametitle{\insertsectionnavigation{\linewidth}} 
-%  \begin{itemize}
-%  \item Hydrodynamics
-%  \item Particle interactions
-%  \item Electrostatics
-%  \end{itemize}
-%\end{frame}
-%
-%\subsection{Hydrodynamics}
-%\begin{frame}
-%  \frametitle{\insertsubsectionnavigation{\linewidth}}
-%  \begin{itemize}
-%  \item Fluid dynamics
-%  \item Particle-fluid coupling (IBM)
-%  \item Pseudo-spectral solvers (FCM)
-%  \end{itemize}
-%\end{frame}
-%
-%\subsection{Particle interactions}
-%\begin{frame}
-%  \frametitle{\insertsubsectionnavigation{\linewidth}}
-%  \begin{itemize}
-%  \item Neighbour lists
-%  \item bonds
-%  \end{itemize}
-%\end{frame}
-%
-%\subsection{Electrostatics}
-%\begin{frame}
-%  \frametitle{\insertsubsectionnavigation{\linewidth}}
-%  \begin{itemize}
-%  \item Poisson equation
-%  \item Reuse of FCM
-%  \end{itemize}  
-%\end{frame}
-%    
+
 %\subsection{UAMMD: A GPU framework for complex fluids}
 %\begin{frame}
 %  \frametitle{\insertsubsectionnavigation{\linewidth}} 
@@ -1511,16 +1530,6 @@
 %  \item Not trying to sell UAMMD, just showcase what it can do.    
 %  \end{itemize}
 %\end{frame}
-%
-%\section{New physics}
-%
-%\begin{frame}
-%  \frametitle{\insertsectionnavigation{\linewidth}} 
-%  \begin{itemize}
-%  \item List works using UAMMD, what level of detail here?
-%  \end{itemize}
-%\end{frame}
-%
 
 \section{UAMMD}
 \begin{frame}
@@ -1530,11 +1539,13 @@
   subsectionstyle=show/show/hide,
   subsubsectionstyle=show/show/show/hide
   ]
+  \note{In this final section I will introduce UAMMD, the GPU software framework for complex fluids that encases, among others, all the algorithms I have previously introduced.}
 \end{frame}
 
 \begin{frame}
   \frametitle{The sea of packages}
   \includesvg[width=\linewidth]{gfx/mdpacks}
+  \note{UAMMD is born in a crowded sea of molecular dynamics packages. Although most of the commercial packages focus on the microscopic level, in other words, molecular dynamics, many times the limits between molecular dynamics and other descriptions proper to complex fluids is kind of blurred from an algorithmic point of view. So in principle this packages, some of them more than others, can be adapted to other descriptions.}
 \end{frame}
 
 \begin{frame}
@@ -1545,11 +1556,17 @@
     \rule{0.7\textwidth}{1.4pt}
   \end{center}
   \begin{itemize}
-  \item Header only and library-like
-  \item Lightweight with minimal dependencies
-  \item Hackable
-  \item Focus on hydrodynamics
+  \item<1-> Header only and library-like
+  \item<2-> Lightweight with minimal dependencies
+  \item<3-> Hackable
+  \item<4-> Focus on hydrodynamics
   \end{itemize}
+  \note<1>{I would like to lay out some key points that make UAMMD, in my opinion, stand out.
+    The first one is that UAMMD is header-only library, as opposed to a monolithic single-binary program.
+  This facilitates the use of UAMMD as an accelerator library in other projects. For instance, exposing some of its utilities to python.}
+\note<2>{The UAMMD source code is lightweight and, besides an NVIDIA GPU with its required software development kit UAMMD does not depend on any code that is not included in its repository.}
+\note<3>{I made UAMMD not only adaptable, but hackable. I tried to reduce internal dependencies to a minimum to encourages users to copy or take away parts of it.}
+\note<4>{Finally, there are not a lot of packages out there that put the focus on hydrodynamics and/or complex fluids.}
 \end{frame}
 
 \subsection{Universally Adaptable Multiscale Molecular Dynamics}
@@ -1593,6 +1610,10 @@
    \only<2>{\Large Independent building blocks.}%
    \only<3>{\Large Solvers for many scales.}%
    \only<4>{\Large Mainly particle based.}%
+   \note<1>{I like to use the UAMMD acronym to introduce its core philosophies. Universal means that both Eulerian and Lagrangian descriptions are supported.}
+   \note<2>{Adaptable speaks about the modular design of the code, which I will get into more detail soon. The library is composed of a series of independent modules that can be interconnected to create one simulation or another.}
+   \note<3>{Multiscale means that UAMMD offers solvers for all the levels of description that I introduced at the start.}
+   \note<4>{Finally, Molecular Dynamics, not the best choice maybe, conveys that particles are the main player. Remember, even when a continuous field, such as a fluid, exists its only as a proxy to communicate the particles.}
 \end{frame}
 \subsection{Basic code structure}
 \begin{frame}[fragile]
@@ -1645,17 +1666,24 @@
       ...      
     \end{code2}
   \end{overprint}
+  \note<1>{When introducing complex fluids, I stated that the majority of levels of description in complex fluids can be interpreted as a series of interacting particles with a state that evolves. This sentence is the foundation of UAMMD. A first layer abstracts the actual machine. Then, we enter into a continuous loop that represents a simulation. Particles feed their properties (positions, velocities...) downwards to rest of the modules, and UAMMD distinguishes between two types of modules.
+    Integrators, which read the state of the particles at one time and take them to the next. And Interactors, which are used by Integrators to compute Forces, Energies or virials.}
+  \note<2>{This conceptual separation is reflected in actual code, where System is a C++ class that can be instantiated.}
+  \note<3,4>{In the same way we can initialize an instance of ParticleData, a container for handling the particle properties.}
+  \note<5>{Integrators are fed a Particle container and are in charge of forwarding them to the next time step. Integrator is a virtual class, and thus can be specialized for each solver. Here VerletNVE is the UAMMD constant-energy molecular dynamics Integrator.}
+  \note<6>{Finally, Interactors, also a virtual class, can be issued to compute forces, etc. and can be added to an Integrator, which in turn will use when forwarding the simulation. Poisson here is the UAMMD Interactor for triply periodic electrostatics.}
 \end{frame}
   
 \begin{frame}
   \frametitle{Available solvers}
-    \includesvg[width=\linewidth]{gfx/sketchUAMMD_integrators}
+  \includesvg[width=\linewidth]{gfx/sketchUAMMD_integrators}
+  \note{This is a list of Integrators available in UAMMD to this date. As you can see, UAMMD exposes solvers for all levels of description that we discussed, and includes Lagrangian and Eulerian/Lagrangian formulations. From molecular dynamics to dissipative particle dynamics and Doubly periodic hydrodynamics.}
 \end{frame}
 
 \begin{frame}
   \frametitle{Available interactions}
   \includesvg[width=\linewidth]{gfx/sketchUAMMD_interactors}
-  \note{We are already generalizing. Talk about the new interactions people are including: Optohydro, magnetism, coarse-grained potentials...}
+  \note{Moreover, the familiar interactions are available as independent Interactor modules, neighbour lists, bonds, electrostatics in several geometries... And the list grows, with collaborators working on Interactors for things like: Optohydrodynamics, magnetism, coarse-grained potentials...}
 \end{frame}
 
 \begin{frame}
@@ -1673,8 +1701,9 @@
       \onslide<4->{\includegraphics[height=0.7\paperheight]{gfx/uammdtutorial1}}
       \onslide<4->{\includegraphics[height=0.7\paperheight]{gfx/uammdtutorial2}}
     }
-    
   \end{figure}
+  \note<1>{UAMMD is open-source and freely available as a github repository.}
+  \note<2,3,4>{This repository is rich with examples, including an in depth series of them that increasingly introduce the UAMMD concepts in a literary, tutorial fashion.}
 \end{frame}
 
 \begin{frame}
@@ -1685,6 +1714,7 @@
     \centering
     \includegraphics[height=0.7\paperheight]{gfx/uammdreadthedocs}
   \end{figure}
+  \only{Finally, a complete documentation is available, with in-depth practical and theoretical information about each existing module and utility in UAMMD.}
 \end{frame}
 
 \section{Conclusions}
