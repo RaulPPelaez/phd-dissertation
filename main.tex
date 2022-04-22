@@ -155,13 +155,13 @@
 
 \begin{frame}
   \frametitle{Talk outline}
-  \only<1>{\tableofcontents[
+  \only<2>{\tableofcontents[
     sectionstyle=show/shaded,
     subsectionstyle=show/show/hide,
     subsubsectionstyle=show/show/show/hide
     ]
   }
-  \only<2>{
+  \only<1>{
     \tableofcontents[
     sectionstyle=show/show,
     subsectionstyle=hide/hide/hide,
@@ -223,14 +223,14 @@
     \item I showed you what a GPU is at the start. In order to understand the rest of the title you also need to know what a complex fluid is.
     \item Although its definition is a little more general, we understand a complex fluids as the coexistence between a solid and a liquid phase. And note that with solid, we usually mean soft, such as a colloidal particle or a cell's lipidic membrane.
     \item This broad definition encloses a wide variety of systems, many times of biological nature. In this slide I show you a bunch of examples, all of them taken from past and ongoing works in our group.
-    \item Starting up we can see coarse-grained representations of a lipid bilayer, a star polymer in a shear flow, a nano dumbell swimming and spinning in a fluid under optically-induced vortexes. A virus capsid, filled with a particular protein, which is being pressed by an AFM tip (the video is not long enough, but the virus ends up exploding under the pressure). Next we have a group of lipidic vesicles, one of them contains a ferromagnetic particle that, when subject to a magnetic field, spins the vesicle. This allows to somewhat control the locomotion of the vesicles. The final picture shows the diffusion of the concentration of a colloidal suspension under strong two-dimensional confinement in different regimes.
+    \item Starting up we can see coarse-grained representations of a lipid bilayer, a star polymer under shear flow, a nano dumbell swimming and spinning in a fluid under optically-induced vortexes. A virus capsid, filled with a particular protein, which is being pressed by an AFM tip (the video is not long enough, but the virus ends up exploding under the pressure). Next we have a group of lipidic vesicles, one of them contains a ferromagnetic particle subjected to a magnetic field, spinning the vesicle. This allows to somewhat control the locomotion of the vesicles. The final picture shows the diffusion of the concentration of a colloidal suspension under strong two-dimensional confinement in different regimes.
     \end{itemize}    
   }  
   \note<2>{
     \begin{itemize}
     \item Here, the figure to the right shows a model of the rotating vesicles a member of group, Pablo, is studying now, in part using the tools and algorithms that I will shortly introduce.
     \item Pablo has also studied other kinds of magnetic nanoparticles.
-    \item These examples showcase enormous span of the spatio-temporal scales associated with complex fluids. Sometimes we need to focus on single polymers, or describe a single polymer in detail. Other times we want to model vesicles that are almost visible to the naked eye.
+    \item These examples showcase enormous span of the spatio-temporal scales associated with complex fluids. Sometimes we need to focus on single polymers, or describe a single protein in detail. Other times we want to model vesicles that are almost visible to the naked eye.
     \end{itemize}
   }
 \end{frame}
@@ -410,8 +410,8 @@
       \item The typical timescale is given by the speed of sound of the fluid as well as its vorticity. In other words, how fast it communicates information.
       }
       \only<3>{
-      \item When particles move so slowly compared to the solvent characteristic times, hydrodynamic interactions,
-        which were previously mediated by a velocity field, are effectively instantaneous. We call this the Langevin level.
+      \item When particles move slowly compared to the solvent characteristic times, hydrodynamic interactions,
+        which were previously mediated by an explicit velocity field, are effectively instantaneous. We call this the Langevin level.
       \item We eliminate the fluid velocity, transforming it into a friction kernel (and of course, fluctuations). Typically, this friction kernel will be defined pairwise, although it could simply be a constant, or depend on the entire particle configuration.
       \item Only the positions and momenta of the particles remain as relevant variables (taking us back to a Lagrangian description once again),
         which obey a Langevin equation.
@@ -515,7 +515,7 @@
     \item In the GPU we find three main strategies for it. Each of them typically excelling in different situations.
     \item The cell list works by binning the domain and identifying the bin of each particle. Then, the neighbours of the black particle are found by visiting the neighbouring bins. The orange particles are false positives.
     \item When the cell list fails, for instance when there are large concentration disparities, we can use tree-based lists. In particular, UAMMD implements the so-called Linear Bounding Volume Hierarchy algorithm, which partitions the domain in a hierarchical fashion, with boxes encasing increasingly large boxes.
-    \item In any case, we leverage the Verlet strategy, which consists of using any of the two to elaborate an interaction list with an artificially enlarged cut of radius. This way, the list can be reused for several steps, as long as the particles do not diffuse a lot.
+    \item In any case, we can leverage the Verlet strategy, which consists of using any of the two to elaborate an interaction list with an artificially enlarged cut of radius. This way, the list can be reused for several steps, as long as the particles do not diffuse a lot.
     \end{itemize}
     }
 \end{frame}
@@ -574,10 +574,10 @@
   \note<2>{
     \begin{itemize}
     \item Such is the case, for instance, of electrostatics and hydrodynamics, interactions decaying just as the inverse of distance.
-    \item We could go ahead and check every pair of particles in the system. An quite GPU-friendly algorithm, alas with a high operation count.
-    \item And that is not taking into account periodic boundary conditions, which would take the operation count of this naive approach to infinity.
-    \end{itemize}
+    \item We could go ahead and check every pair of particles in the system. A quite GPU-friendly algorithm, alas with a high operation count.    
+    \end{itemize}    
   }
+  \note<3>{And that is without taking into account periodic boundary conditions, which would take the operation count of this naive approach to infinity.}
 \end{frame}
 
 
@@ -1121,7 +1121,7 @@
       %\item<4-> Doubly periodic (DP)
       \end{itemize}
       \begin{overlayarea}{\linewidth}{0.5\paperheight}
-        \only<1-3>{\includesvg[width=0.9\linewidth]{gfx/q2D}\\
+        \only<1-3>{\includesvg[width=0.9\linewidth]{gfx/q2d}\\
           \begin{center}
             q2D: $\delta\rightarrow 0$.\\3D fluid, 2D particles
           \end{center}
@@ -1714,7 +1714,7 @@ This algorithm also comes with similar hardships as the Stokes one: We need to s
     \centering
     \includegraphics[height=0.7\paperheight]{gfx/uammdreadthedocs}
   \end{figure}
-  \only{Finally, a complete documentation is available, with in-depth practical and theoretical information about each existing module and utility in UAMMD.}
+  \note{Finally, a complete documentation is available, with in-depth practical and theoretical information about each existing module and utility in UAMMD.}
 \end{frame}
 
 \section{Conclusions}
