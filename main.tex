@@ -1,14 +1,29 @@
-\documentclass[xcolor=dvipsnames]{beamer}
+\documentclass[xcolor=dvipsnames, compress]{beamer}
+\usetheme[compress]{Madrid}
+\setbeamertemplate{enumerate items}[square]
+\setbeamertemplate{headline}{}
+\setbeamertemplate{footline}
+{
+  \leavevmode%
+  \hbox{%
+  \begin{beamercolorbox}[wd=.4\paperwidth,ht=2.25ex,dp=1ex,center]{author in head/foot}%
+    \usebeamerfont{author in head/foot}\insertshortauthor
+  \end{beamercolorbox}%
+  \begin{beamercolorbox}[wd=.6\paperwidth,ht=2.25ex,dp=1ex,center]{title in head/foot}%
+    \usebeamerfont{title in head/foot}\insertshorttitle\hspace*{3em}
+    \insertframenumber{} / \inserttotalframenumber\hspace*{1ex}   
+  \end{beamercolorbox}}%
+  \vskip0pt%
+}
+\usepackage{pgfplots}
 \usepackage{pgfpages}
+\usepackage[export]{adjustbox}
+\usepackage[utf8]{inputenc}
 \setbeameroption{show notes on second screen}
-
 \usepackage[outline]{contour}
 \usepackage{transparent}
-\usepackage{pgfplots}
-\usepackage[utf8]{inputenc}
 \usepackage{multimedia}
 \usepackage{graphicx}
-\usetheme{Madrid}
 \usepackage{amsmath,amssymb}
 \usepackage{bm}
 \usepackage[absolute,overlay]{textpos}
@@ -20,6 +35,11 @@
 \usetikzlibrary{math}
 \usepackage{caption}
 \usepackage{lmodern}
+\usepackage{tcolorbox}
+\usepackage{xparse}
+\tcbuselibrary{breakable,minted,xparse,skins,listings}
+\usepackage[absolute,overlay]{textpos}
+
 \beamertemplatenavigationsymbolsempty
 \usefonttheme[onlymath]{serif}
 \graphicspath{{./gfx/}}
@@ -55,17 +75,12 @@
 \newcommand{\includesvg}[2][width=\columnwidth]{
   \executeiffilenewer{#2.svg}{#2.pdf}
   {inkscape -D #2.svg --export-type=pdf } %  --export-latex}
-  %\def\svgwidth{#2}
-  % \input{#1.pdf_tex}
   \includegraphics[#1]{#2.pdf}
 }
 
-\usepackage[absolute,overlay]{textpos}
+
 
 \def\ucpp{uammd_cpp_lexer.py:UAMMDCppLexer -x}
-\usepackage{tcolorbox}
-\usepackage{xparse}
-\tcbuselibrary{breakable,minted,xparse,skins,listings}
 \usemintedstyle{default}
 \setminted[\ucpp]{ %
   linenos=false,             % Line numbers
@@ -94,50 +109,16 @@
 }
 \tcbsetforeverylayer{autoparskip}
 
-
-\makeatother
-\setbeamertemplate{footline}
-{
-  \leavevmode%
-  \hbox{%
-  \begin{beamercolorbox}[wd=.4\paperwidth,ht=2.25ex,dp=1ex,center]{author in head/foot}%
-    \usebeamerfont{author in head/foot}\insertshortauthor
-  \end{beamercolorbox}%
-  \begin{beamercolorbox}[wd=.6\paperwidth,ht=2.25ex,dp=1ex,center]{title in head/foot}%
-    \usebeamerfont{title in head/foot}\insertshorttitle\hspace*{3em}
-    \insertframenumber{} / \inserttotalframenumber\hspace*{1ex}
-  \end{beamercolorbox}}%
-  \vskip0pt%
-}
-\makeatletter
-\makeatletter
-\newcommand{\howmany}[2][subsection]{%
-  \begingroup
-  \@namedef{the#1}{\arabic{#1}}%
-  \addtocounter{#1}{\m@ne}%
-  \refstepcounter{#1}%
-  \label{#2}%
-  \endgroup}
-\makeatother
-
 \title{Complex fluids in the GPU era}
 \subtitle{Algorithms and simulations}
 \author{Raul P. Pelaez}
-
 \institute{Universidad Autónoma de Madrid}
 \date{\today}
-
 %\captionsetup[figure]{font=small,skip=0pt}
-\usepackage[export]{adjustbox}
 \setbeamertemplate{itemize subitem}{$\rightarrow$}
-\newcounter{framesectioncounter}
-\AddToHook{cmd/section/before}{\setcounter{framesectioncounter}{0}}
 \pdfmapfile{-mpfonts.map}
-\usepackage{lmodern}
 \everymath{\displaystyle}
 \begin{document}
-
-
 \begin{frame}
   \titlepage
   \centering
@@ -148,8 +129,6 @@
   \end{figure}
   \note{This is a GPU. A powerful hardware with a unique programming model. Harvesting its tremendous raw power requires developing algorithms and software specifically tailored for it. My work during these past years has been devoted to exploiting the GPU for the simulation of complex fluids. Now, before we continue, let me give you a summary of this talk. }
 \end{frame}
-
-%\section{This thesis main contributions}
 
 \section{Introduction}
 
@@ -178,23 +157,6 @@
     \end{itemize}
   }
 \end{frame}
-
-
-
-%\begin{frame}
-%  \frametitle{Outline}
-%  \begin{itemize}
-%  \item UAMMD's functionalities
-%  \item Particle-based and grid based
-%  \item Code structure
-%    \begin{itemize}
-%    \item open-source
-%    \item adaptable
-%    \item ...
-%    \end{itemize}
-%  \end{itemize}
-%\end{frame}
-%
 
 \subsection{Complex fluids}
 \begin{frame}
@@ -394,41 +356,46 @@
   \only<4>{
     $d\vec{\noise}$: Wienner increments, $\mathcal{N}(0,dt)$
   }
-
-  \note<1-5>{
+  \note<1>{
     \begin{itemize}
-      \only<1>{
-      \item At the lowest level (the most detailed one) we find the microscopic level, where we need to describe the positions and velocities of every atom (or small group of atoms) involved in the system. This includes every water molecule conforming the fluid in addition to the particles embedded in it. The Newton equations of motion govern this level, where the inter-particle forces are of atomic origin. Notice that this is a fully Lagrangian description.
-      \item The typical timescale is given by the fast-moving fluid particles.
-      \item BTW, note that I am using the so-called supervector notation here, where a symbol without a subindex often refers to the list of all related quantities. As opposed to, for instance, $\vec{q}_i$, which refers to a specific particle called ``i''. I will abuse this notation throughout this talk, so beware!.
-      }
-      \only<2>{
-        \footnotesize
-      \item Going up we have the hydrodynamic level, where the individual degrees of freedom of the fluid particles are lost and we are left, instead, with a continuous velocity field representing them. The math tells us that when we do this, we must reintroduce the lost degrees-of-freedom as thermal fluctuations.
-      \item Thus this is an Eulerian-Lagrangian formalism and is governed by the Navier-Stokes equations describing the fluid. A fluid which exists in a two-way coupling with a group of embedded particles.
-      \item This coupling is far from trivial, but in essence it consists of the particles communicating their forces to the fluid via a force density and, in return, the particles following the fluid by sampling its surrounding velocity. $V_p$ here is the volume of a particle (whatever that means).
-      \item The typical timescale is given by the speed of sound of the fluid as well as its vorticity. In other words, how fast it communicates information.
-      }
-      \only<3>{
-      \item When particles move slowly compared to the solvent characteristic times, hydrodynamic interactions,
-        which were previously mediated by an explicit velocity field, are effectively instantaneous. We call this the Langevin level.
-      \item We eliminate the fluid velocity, transforming it into a friction kernel (and of course, fluctuations). Typically, this friction kernel will be defined pairwise, although it could simply be a constant, or depend on the entire particle configuration.
-      \item Only the positions and momenta of the particles remain as relevant variables (taking us back to a Lagrangian description once again),
-        which obey a Langevin equation.
-      \item The characteristic decorrelation time of the particle's velocities governs this scale.
-      }
-      \only<4>{
-      \item At some point in our upwards journey, the particle positions change slowly enough that their velocity decorrelates
-        effectively instantaneously, thus inertia can be disregarded and positions are the only relevant variable.
-      \item Here, the friction kernel has morphed into a mobility tensor (which is the inverse of a friction) and is typically dependent on the position of every particle. Although once again, it might be a simple constant, for instance if we neglect hydrodynamic interactions.
-      \item The dynamics are described by the Brownian Dynamics equations of motion (an over-damped Langevin equation).
-      \item The diffusion time of the particles dominates this level.
-      }
-      \only<5>{
-      \item Let me show you again all the levels of description, which overall allows us to describe a really wide timescale range.
-      \item Now, there is a not-so-hidden theme here that has allowed me to design a software framework encasing all of this.
-        Have you noticed it?
-      }
+    \item At the lowest level (the most detailed one) we find the microscopic level, where we need to describe the positions and velocities of every atom (or small group of atoms) involved in the system. This includes every water molecule conforming the fluid in addition to the particles embedded in it. The Newton equations of motion govern this level, where the inter-particle forces are of atomic origin. Notice that this is a fully Lagrangian description.
+    \item The typical timescale is given by the fast-moving fluid particles.
+    \item BTW, note that I am using the so-called supervector notation here, where a symbol without a subindex often refers to the list of all related quantities. As opposed to, for instance, $\vec{q}_i$, which refers to a specific particle called ``i''. I will abuse this notation throughout this talk, so beware!.
+    \end{itemize}
+  }
+  \note<2>{
+    \begin{itemize}
+      \footnotesize
+    \item Going up we have the hydrodynamic level, where the individual degrees of freedom of the fluid particles are lost and we are left, instead, with a continuous velocity field representing them. The math tells us that when we do this, we must reintroduce the lost degrees-of-freedom as thermal fluctuations.
+    \item Thus this is an Eulerian-Lagrangian formalism and is governed by the Navier-Stokes equations describing the fluid. A fluid which exists in a two-way coupling with a group of embedded particles.
+    \item This coupling is far from trivial, but in essence it consists of the particles communicating their forces to the fluid via a force density and, in return, the particles following the fluid by sampling its surrounding velocity. $V_p$ here is the volume of a particle (whatever that means).
+    \item The typical timescale is given by the speed of sound of the fluid as well as its vorticity. In other words, how fast it communicates information.
+    \end{itemize}
+  }    
+  \note<3>{
+    \begin{itemize}
+    \item When particles move slowly compared to the solvent characteristic times, hydrodynamic interactions,
+      which were previously mediated by an explicit velocity field, are effectively instantaneous. We call this the Langevin level.
+    \item We eliminate the fluid velocity, transforming it into a friction kernel (and of course, fluctuations). Typically, this friction kernel will be defined pairwise, although it could simply be a constant, or depend on the entire particle configuration.
+    \item Only the positions and momenta of the particles remain as relevant variables (taking us back to a Lagrangian description once again),
+      which obey a Langevin equation.
+    \item The characteristic decorrelation time of the particle's velocities governs this scale.
+    \end{itemize}
+  }
+  \note<4>{
+    \begin{itemize}
+    \item At some point in our upwards journey, the particle positions change slowly enough that their velocity decorrelates
+      effectively instantaneously, thus inertia can be disregarded and positions are the only relevant variable.
+    \item Here, the friction kernel has morphed into a mobility tensor (which is the inverse of a friction) and is typically dependent on the position of every particle. Although once again, it might be a simple constant, for instance if we neglect hydrodynamic interactions.
+    \item The dynamics are described by the Brownian Dynamics equations of motion (an over-damped Langevin equation).
+    \item The diffusion time of the particles dominates this level.
+    \end{itemize}
+  }
+  \note<5>{
+    \begin{itemize}
+    \item Let me show you again all the levels of description, which overall allows us to describe a really wide timescale range.
+    \item Now, there is a not-so-hidden theme here that has allowed me to design a software framework encasing all of this.
+      Have you noticed it?
     \end{itemize}
   }
   \note<6>{
@@ -617,6 +584,8 @@
     \end{itemize}
     }
 \end{frame}
+% Put in bold only the one you are speaking of (brute force, etc)
+% "The most stright-forward way to compute LR ints is brute force, checking all pairs, which is often seen as naive and non-sensical. However, the GPU has such a brutal raw power that brute force could be considered, but with PBC...".
 
 
 
@@ -804,14 +773,11 @@
   \only<+>{\includesvg[width=0.8\linewidth]{gfx/celllist0}}%
   \only<+>{\includesvg[width=0.8\linewidth]{gfx/celllist1}}%
   \only<+>{\includesvg[width=0.8\linewidth]{gfx/celllist2}}%
-  \note{
-    \begin{itemize}
-    \only<1>{\item Let us sort the particles so that particles close in space are also close in memory.}
-    \only<1>{\item The numbers above these particles represent their location in memory. Random.}
-    \only<2>{\item But if we virtually bin the domain...}
-    \only<3>{\item ... we can assign a hash to each particle based on its position. If we are smart about this hash, like this curve here that represents an increasing value of the hash, when we sort the particles based on it we will end up with a better access pattern. Note that now particles are ordered following the red curve.}
-    \end{itemize}
-    }
+  \only<+>{\includesvg[width=0.8\linewidth]{gfx/celllist3}}%
+  \note<1>{Let us by virtually binning the domain, where each cell is identified by unique coordinates.}
+  \note<2>{Then, using the cell coordinates to hash them, we choose a space filling curve that maximizes local volume exploration with an optimal tortuosity. Here the hash value increases following the red line.}
+  \note<3>{For any set of random particles, we hash and sort them along the curve. Before this sorting, there is no correlation between a particle's location in memory and space.}
+  \note<4>{But after sorting, particles with similar hashes (close in space by construction) have a similar memory location.}
 \end{frame}
 
 \begin{frame}
@@ -1262,12 +1228,14 @@
     This concludes the adaptation of the Force Coupling method to quasi two-dimensional geometries. And it is worth mentioning that we have some lee-way when choosing the Green's function here, allowing to reuse the same algorithm for other kinds of strongly confined systems. Such as when the fluid is also two dimensional.}  
 \end{frame}
 
+% Maybe more intiutively, the force coming from the confining potential, induces a flow which acts as a source of fluid momentum in the plane. And in fact enhances collective diffussion.
 
 \begin{frame}
   \frametitle{Doubly Periodic Force Coupling Method}
   \begin{block}{\centering Stokes equations}
     \begin{overprint}
       \onslide<1-6>
+      \vspace*{5pt}
       \begin{equation*}
         \eta \nabla^2\vec{\fvel} =  \nabla \pi - \vec{f}, \qquad   \nabla\cdot\vec{\fvel} = 0%
       \end{equation*}
