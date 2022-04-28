@@ -33,6 +33,7 @@
 \tikzstyle{every picture}+=[remember picture]
 \usetikzlibrary{positioning}
 \usetikzlibrary{math}
+\usetikzlibrary{arrows.meta}
 \usepackage{caption}
 \usepackage{lmodern}
 \usepackage{tcolorbox}
@@ -209,7 +210,7 @@
       \begin{scope}[shift={(image.south west)},x={(image.south east)},y={(image.north west)}]
         %\draw foreach \xy in {0,0.1,...,1.001}{(\xy,0) -- node[pos=0,below]{\pgfmathprintnumber{\xy}} (\xy,1)(0,\xy) -- node[pos=0,left]{\pgfmathprintnumber{\xy}} (1,\xy)};
         \only<2>{\filldraw[red, opacity=0.6] (0.12,1) rectangle (0.5,0.07) node[midway] (A) {};\node[above=50pt of A, black]{\contourlength{1pt}\contour{white}{\textbf{Fully Lagrangian}}};}
-        \only<4>{\filldraw[blue, opacity=0.6] (0.5,1) rectangle (0.72,0.07) node[midway] (A) {};\node[below=40pt of A, black, align=left]{\contourlength{1pt}\contour{white}{\textbf{Eulerian}}\\\contourlength{1pt}\contour{white}{\textbf{Lagrangian}}};}
+        \only<4>{\filldraw[blue, opacity=0.6] (0.5,1) rectangle (0.72,0.07) node[midway] (A) {};\node[below=40pt of A, black, align=left]{\contourlength{1pt}\contour{white}{\textbf{Immersed}}\\\contourlength{1pt}\contour{white}{\textbf{Boundary}}}; \node[above=30pt of A, black, align=left]{\contourlength{1pt}\contour{white}{\textbf{Eulerian}}\\\contourlength{1pt}\contour{white}{\textbf{Lagrangian}}};}
         \only<3>{\filldraw[green, opacity=0.6] (0.72,1) rectangle (1,0.07) node[midway] (A) {};\node[above=50pt of A, black]{\contourlength{1pt}\contour{white}{\textbf{Fully Eulerian}}};}
       \end{scope}
     \end{tikzpicture}
@@ -225,7 +226,7 @@
   \note<2>{
     \begin{itemize}
     \item Broadly speaking, we can categorize the landscape into three families of methods.
-    \item When studying small systems, we usually choose a fully Lagrangian scheme, meaning that we track the evolution of individual particles, or markers.      
+    \item When studying small systems, we usually choose a fully Lagrangian scheme, meaning that we track the evolution of individual particles, or markers.
     \end{itemize}
   }
   \note<3>{
@@ -236,6 +237,7 @@
   \note<4>{
     \begin{itemize}
     \item In the middle, in what we call the mesoscale, there is a mixed domain of Eulerian-Lagrangian methods, where we describe both a group of particles and continuous fields that are somehow coupled.
+    \item The Immersed boundary method is the canonical strategy used to describe this coupling.
     \item This is the realm of hydrodynamics, where most of the examples I showed you take place.
     \item I would like to point out now that my algorithmic contributions lie in this regime.
     \end{itemize}
@@ -296,14 +298,16 @@
       \item<1-3,5-> $\vec{u}_i$: Velocity of particle $i$.
       \item<3,5-> $\xi(\vec{q}_{ij})$: Friction kernel.
       \item<2,5-> $\vec{v}(\vec{r},t)$: Fluid velocity field.
-      \item<4-> $M(\vec{q}_{ij})$: Mobility tensor.
+      \item<4-> $\tens{M}(\vec{q}_{ij})$: Mobility tensor.
       \end{itemize}
       \centering      
       \only<1-4>{\textbf{Typical timescale:}\newline}
-      \only<1>{$\tau \sim 10^{-12}s$}
-      \only<2>{$\tau \sim 10^{-\{9-6\}}s$}
-      \only<3>{$\tau \sim 10^{-5}s$}
-      \only<4>{$\tau \sim 10^{-3}s$}
+      \begin{overprint}
+        \only<1>{$\tau \sim 10^{-12}s$}
+        \only<2>{$\tau \sim 10^{-\{9-6\}}s$}
+        \only<3>{$\tau \sim 10^{-5}s$}
+        \only<4>{$\tau \sim 10^{-3}s$}
+      \end{overprint}
       \only<5->{\textbf{Timescale range:}\newline $\tau \sim [10^{-12}, 10^{-3}]s$}
     \end{column}
   \end{columns}
@@ -314,7 +318,7 @@
   \only<6>{\begin{textblock*}{0.99\linewidth}(0.04\linewidth,0.23\paperheight)}
     \begin{block}<1-4>{
         \only<1>{Molecular Dynamics (MD)}
-        \only<2>{Immersed Boundary Method (IBM)}
+        \only<2>{Fluctuating Hydrodynamics}
         \only<3>{Langevin Dynamics (LD)}
         \only<4>{Brownian Dynamics (BD)}
       }{$$\only<1>{%
@@ -325,7 +329,7 @@
         }%
       \only<2>{%
           \begin{aligned}
-            &\rho\partial_t\vec{\fvel} = -\vec{\partial}_{\vec{\fpos}}\cdot \tens{\sigma} + \vec{f} + \text{fluct}\\
+            \rho\partial_t\vec{\fvel} &= -\vec{\partial}_{\vec{\fpos}}\cdot \tens{\sigma} + \vec{f} + \text{fluct}\\
             \int_{V_p}\vec{f}d\vec{\fpos} &= \vec{F}_i\quad\text{and}\quad \vec{u}_i = \int_{V_p}\vec{\fvel}d\vec{\fpos}
           \end{aligned}%
        }%
@@ -656,7 +660,7 @@
   }
   \note<3>{
     \begin{itemize}
-    \item This communication is mediated via a compactly-supported bell-shaped kernel.
+    \item This communication is mediated via a compactly-supported bell-shaped kernel that is separable in the three directions. ``a'' here denotes the typical width of the kernel, related to the physical size of the particles.
     \end{itemize}
   }
   \note<4>{
@@ -674,7 +678,7 @@
 
 \begin{frame}
   \frametitle{Particle-grid coupling}
-  \framesubtitle{GPU thread geometry}
+  \framesubtitle{GPU: Basic principles}
   \includesvg[width=0.8\linewidth]{gfx/cudablocks}\\
   \onslide<2->{
     \centering
@@ -685,17 +689,73 @@
     \item<4-> Mostly memory-bandwidth bound
     \end{itemize}
   }
-  \note{
+  \note<1>{
     \begin{itemize}
     \item First, we need to understand a little bit more about how GPUs work.
     \item Broadly speaking, in a CPU, we typically have dozens of powerful workers, or threads, that, while sharing the same underlying memory pool, largely function as individual processors.
-    \item<2-> On the contrary, a GPU offers thousands of threads, which are grouped into blocks of a few hundreds.
-    \item<3-> And there is a caveat, all threads in a block must all perform the same operation at the same time. 
-    \item<4> This operation can be applied to different data, but GPU payloads tend to be bottlenecked by memory operations.
-    \item<4> To aid with this, we have several memory spaces available. The slow access global memory is accessible by threads in every block, while shared memory is fast but only available to the threads inside the same block and only when the GPU is running a job.
     \end{itemize}
-    }
+  }  
+  \note<2>{ On the contrary, a GPU offers thousands of threads (albeit slower ones), which are grouped into blocks of a few hundreds.}
+  \note<3>{ And there is a caveat, all threads in a block must all perform the same operation at the same time. }
+  \note<4>{
+    \begin{itemize}
+    \item This operation can be applied to different data, but GPU payloads tend to be bottlenecked by memory operations.
+    \item To aid with this, we have several memory spaces available. The slow access global memory is accessible by threads in every block, while shared memory is fast but only available to the threads inside the same block and only when the GPU is running a job.
+    \end{itemize}
+  }
 \end{frame}
+
+\begin{frame}
+  \frametitle{Particle-grid coupling}
+  \framesubtitle{GPU Common concerns: Cache memory}
+  \centering
+  \only<1>{\includesvg[width=0.6\linewidth]{gfx/gridparticles}}%
+  \only<2>{\includesvg[width=0.8\linewidth]{gfx/cachezoom}}%
+  \only<3>{\includesvg[width=0.8\linewidth]{gfx/cachezoomthreads}}%
+  \only<4>{\includesvg[width=0.8\linewidth]{gfx/cache}}%
+  \only<5>{\includesvg[width=0.8\linewidth]{gfx/cachebad}}%
+  \note<1>{
+    \begin{itemize}
+    \item For spreading and interpolation, we need to take into account a couple of GPU quirks.
+    \item Typically we need to deal with a situation like this one. A distribution of particles, which might overlap, that must communicate with an underlying grid. Each particle needs to do something with the grid points it overlaps. Normally, a thread or group of threads is assigned to each particle.
+    \item The first consideration is cache memory. And this is not particular to the GPU, but its effect is more important due to its memory-bandwidth limitations.
+    \end{itemize}
+  }
+  \note<2>{
+    \begin{itemize}
+    \item Zooming in to some arbitrary section of the domain, I have denoted the grid points with ``g''. Where each thread will be assigned to some particle that may or may not be the same.
+    \end{itemize}
+  }
+  \note<3>{
+    \begin{itemize}
+    \item The thing is that when spreading, threads, ``t'', will need to write to grid points.
+    \end{itemize}
+  }
+  \note<4>{
+    \begin{itemize}
+    \item The GPU greatly benefits from contiguous threads dealing with data that is stored in close memory locations.
+    \end{itemize}
+  }
+  \note<5>{
+    \begin{itemize}
+    \item On the contrary, performance degrades when contiguous threads deal with memory locations that are far away.
+    \item The take away message here is that we really want operations that happen close in physical space to also reside close in GPU memory.
+    \end{itemize}
+  }
+\end{frame}
+
+\begin{frame}
+  \frametitle{Particle-grid coupling}
+  \framesubtitle{GPU Common concerns: Atomic operations}
+  \centering
+  \includesvg[width=0.8\linewidth]{gfx/cacheatomics}%
+  \note{
+    \begin{itemize}
+    \item The other concern is atomic operations. Since different threads may deal with different particles concurrently it can happen that two threads might try to write at the same time to the same place. This is called an atomic operation, and traditionally this collision incurs a large overhead.
+    \end{itemize}
+  }
+\end{frame}
+
 
 \begin{frame}
   \frametitle{Particle-grid coupling}
@@ -715,19 +775,21 @@
       \end{block}
     \end{column}
     \begin{column}{0.4\linewidth}
+      \includesvg[width=\linewidth]{gfx/bppcudablocks}\\
       \includesvg[width=\linewidth]{gfx/ibm_algo}
     \end{column}
   \end{columns}
   \note<1>{
     \begin{itemize}
-    \item Naturally, this is just the tip of the iceberg, but hopefully enough to get us going.
-    \item Let me get back to spreading an interpolation now.
-    \item My strategy consists on assigning a block of threads to each particle, so that each thread in the block takes care of a different nearby grid point. We can take advantage of several threads working on the same particle and perform some computations only once per block. For instance, precomputing the kernel and storing it in shared memory.
+    \item So remember, we must juggle cache memory and atomics. Let me tell you how my strategy for spreading and interpolation deals with them.
+    \item We assign a block of threads to each particle, so that each thread in the block takes care of a different nearby grid point. This automatically improves memory access, since by construction nearby threads read nearby locations in memory. On the other hand we can take advantage of several threads working on the same particle. Putting common information in shared memory.
+    \item Furthermore, all threads in the same block are guaranteed to be free of atomic operations.
     \end{itemize}
   }
   \note<2>{
     \begin{itemize}
-    \item For spreading, a block per particle means that each thread computes the contribution of a particle and adds it to a single grid point atomically (given that other threads, for other particles, might be attempting the same thing at the same time).
+    \item Still, other blocks, assigned to other particles, can cause atomic collisions when spreading. Imagine another particle overlapping with this one.
+    \item In this case, each thread in the block writes the contribution of the particle to a different grid point.
     \end{itemize}
   }
   \note<3>{
@@ -735,48 +797,81 @@
     \item Interpolation is inherently more efficient, since we only have to read the grid information. Each thread computes the contribution of a different nearby grid point. After summing all of them only one thread needs to write the final result for the particle.
     \end{itemize}
   }
-
+  \note<4>{
+    Let me focus then on spreading, the problematic operation.
+   } 
 \end{frame}
 
 \begin{frame}
   \frametitle{Particle-grid coupling}
   \framesubtitle{Spreading: Performance of a random distribution}
   \centering
-  \includegraphics[width=0.6\linewidth]{gfx/ibm_comp_dens1_2080ti}\\
-  \begin{minipage}{0.4\linewidth}
-    \begin{exampleblock}{Largest number of particles}
-      \centering
-      $N=512^3 \approx 1.3\cdot 10^8$
-    \end{exampleblock} 
-  \end{minipage}
+  \includesvg[width=0.55\linewidth]{gfx/gridparticlesdense}\\%
+  \centering
+  Random distribution with $\sim 1$ particle per grid point
   \note{
-    \scriptsize
     \begin{itemize}
-    \item Let us see how efficient this strategy is. This is the time it takes to spread one particle as we increase the number of particles in a random distribution. And this has two important consequences: First a lot of overlapping can happen and second, there is no correlation between a particle's physical position and its location in GPU memory.
-    \item Here BPP represents the block-per-particle algorithm I described. TPP is a naive thread-per-particle implementation. SM is a recent sophisticated alternative that assigns a block to a piece of the domain instead of a particle, trying to avoid atomic operations.
-    \item I used a random distribution because I wanted to test something out. In theory a random distribution could potentially reduce atomic overlapping at the cost of a worse memory access pattern. If atomics are so bad then this should be worth it.
-    \item My claim here is that GPU atomics are so efficient nowadays that we do not really have to worry about them.
-    \item If I am right, a more cache-friendly memory pattern should be more important than avoiding atomics. So let us turn things around.
+    \item To test both atomics and the effect of the memory pattern, I will study a really dense random distribution of particles.
+    \item In particular, with as much particles are grid points.
+    \item Random means that first, there is a lot of overlap.
+    \item And second, there is no correlation between nearby particles and their memory locations.
     \end{itemize}
-    }
-  % \begin{columns}[T]
-%    \begin{column}{0.4\linewidth}
-%    \end{column}
-%    \begin{column}{0.6\linewidth}
-%
-%    \end{column}
-%  \end{columns}
+  }
+\end{frame}
+
+\begin{frame}
+  \frametitle{Particle-grid coupling}
+  \framesubtitle{Spreading: Performance of a random distribution}
+  \begin{columns}
+    \begin{column}{0.5\linewidth}
+      \centering
+      \includegraphics[width=\linewidth]{gfx/ibm_comp_dens1_2080ti}
+    \end{column}
+    \begin{column}{0.5\linewidth}
+      \begin{overlayarea}{\linewidth}{0.6\paperheight}
+        \begin{block}{\centering \only<1>{Block per particle}\only<2>{Thread per particle}\only<3>{Domain per block}}
+          \centering
+          \only<1>{\includesvg[width=\linewidth]{gfx/bppcudablocks}}
+          \only<2>{\includesvg[width=\linewidth]{gfx/tppcudablocks}}
+          \only<3>{\includesvg[width=\linewidth]{gfx/smcudablocks}}
+        \end{block}
+      \end{overlayarea}
+    \end{column}
+  \end{columns}
+  \begin{minipage}{0.4\linewidth}
+    \centering
+    $\sim 1$ particle per cell
+  \end{minipage}
+  \note<1>{
+    \begin{itemize}
+    \item This is the average time it takes to spread one particle as we increase the system size (keeping the concentration constant).
+    \item Here block per particle represents the algorithm I just described.
+    \end{itemize}
+  }
+  \note<2>{
+    \begin{itemize}
+    \item Thread per particle is a naive implementation where we assign a particle to each thread, without them collaborating in any way.
+    \end{itemize}
+  }
+  \note<3>{
+    \begin{itemize}
+    \item Block per domain is a recent sophisticated alternative that assigns groups of threads to a piece of the domain instead of a particle, trying to avoid atomic operations.
+    \item Although my strategy seems to be best for small systems. It appears to fail after 2 million particles.
+    \item A block per particle naturally reduces atomic operations. On the other hand the particles being randomly distributed in memory also help with that at the cost of a much less cache friendly access pattern.
+    \item I claim that this trade-off is not worth it and a better access pattern is more important tan avoiding atomics. Luckily I have a really cool trick that can help me prove my point.
+    \end{itemize}
+  }
 \end{frame}
 
 \begin{frame}
   \frametitle{Increasing data locality}
-  \only<+>{\includesvg[width=0.8\linewidth]{gfx/celllist0}}%
-  \only<+>{\includesvg[width=0.8\linewidth]{gfx/celllist1}}%
-  \only<+>{\includesvg[width=0.8\linewidth]{gfx/celllist2}}%
-  \only<+>{\includesvg[width=0.8\linewidth]{gfx/celllist3}}%
-  \note<1>{Let us by virtually binning the domain, where each cell is identified by unique coordinates.}
+  \only<+>{\includesvg[width=\linewidth]{gfx/celllist0}}%
+  \only<+>{\includesvg[width=\linewidth]{gfx/celllist1}}%
+  \only<+>{\includesvg[width=\linewidth]{gfx/celllist2}}%
+  \only<+>{\includesvg[width=\linewidth]{gfx/celllist3}}%
+  \note<1>{Let us virtually bin the domain, where each cell is identified by unique coordinates. And note that this binning is decoupled from the target discretized field.}
   \note<2>{Then, using the cell coordinates to hash them, we choose a space filling curve that maximizes local volume exploration with an optimal tortuosity. Here the hash value increases following the red line.}
-  \note<3>{For any set of random particles, we hash and sort them along the curve. Before this sorting, there is no correlation between a particle's location in memory and space.}
+  \note<3>{For any set of random particles, we hash and sort them along the curve. The numbers above particles represent their initial location in memory. Before this sorting, there is no correlation between a particle's location in memory and space.}
   \note<4>{But after sorting, particles with similar hashes (close in space by construction) have a similar memory location.}
 \end{frame}
 
@@ -793,17 +888,13 @@
       \draw node[anchor = east, inner sep = 0] (image2) {\includegraphics[width=0.49\linewidth]{gfx/ibm_comp_dens1_2080ti}};
     \end{scope}
     \draw node [above] (text2) at (image2.north) {\huge Unsorted};
-  \end{tikzpicture}\\
-  \begin{minipage}{0.4\linewidth}
-    \begin{exampleblock}{Largest number of particles}
-      \centering
-      $N=512^3 \approx 1.3\cdot 10^8$
-    \end{exampleblock}
-  \end{minipage}
+  \end{tikzpicture}
   \note{
     \begin{itemize}
-    \item Now, does this work? It turns out it does! and by a lot. The black being quasi horizontal means that we have achieved linear scaling, and with quite a good timing.
-    \item In this case simplicity beats complexity and we can conclude that GPU atomics are a really powerful tool.
+    \item Turns out this works amazingly.
+    \item Just by sorting we increase performance ten fold in some cases.
+    \item The black line being quasi horizontal means that we have achieved linear scaling, and with quite a good timing too.
+    \item In this case simplicity beats complexity. Now, being a closed-sourced architecture I have no way of knowing what it is exactly, but I am pretty sure there is something going on with atomics in the GPU that makes them way less expensive than they should.
     \end{itemize}
   }
 \end{frame}
@@ -833,7 +924,7 @@
   \end{figure}
   \note{
     \begin{itemize}
-    \item I am going to focus on the Smoluchowski level SOMETHING MORE
+    \item And note that my contributions focus on the Smoluchowski level.
     \end{itemize}
   }
 \end{frame}
@@ -858,7 +949,7 @@
   \end{figure}
   \note{
     \begin{itemize}
-    \item We will require techniques that mix both continuous fields and particles.
+    \item Which will require techniques that mix both continuous fields and particles.
     \end{itemize}
     }
 \end{frame}
@@ -895,19 +986,19 @@
       \end{itemize}
     }
   \end{overlayarea}
-  \note{
-    \begin{itemize}
-    \only<1>{\item The Smoluchowski level is governed by the Brownian Dynamics equations of motion. Which can be written as follows.}
-    \only<1>{\item Here, M is a Mobility tensor, which in general is a symmetric matrix with elements for all pairs of particles.}
-    \only<2>{\item We also have some thermal fluctuations.}
-    \only<3>{\item And in general, a so-called thermal drift term that is luckily, many times null.}
-    \only<4>{\item Sadly, applying this equation directly is far from trivial in most instances.}
-    \only<5>{\item For starters, applying the mobility involves multiplying a 3Nx3N matrix and a 3N vector.}
-    \only<6>{\item Moreover, we need to compute the square root of the mobility, whatever that means.}
-    \only<7>{\item And to make things worse, many times we do not even have an expression for the mobility. Which is an object that emerges from macroscopic hydrodynamics.
-    \item Instead of using this equation, we can arrive at the same dynamics by solving the Stokes equations coupled with particles. This opens the way to a family of Eulerian-Lagrangian algorithms, our specialty.}
-    \end{itemize}
+    \note<1>{
+      \begin{itemize}
+      \item The Smoluchowski level is governed by the Brownian Dynamics equations of motion. Which can be written as follows.
+      \item Here, M is a Mobility tensor, which in general is a symmetric matrix with elements for all pairs of particles.
+      \end{itemize}
     }
+    \note<2>{We also have some thermal fluctuations.}
+    \note<3>{And in general, a so-called thermal drift term that is luckily, many times null.}
+    \note<4>{Sadly, applying this equation directly is far from trivial in most instances.}
+    \note<5>{For starters, applying the mobility involves multiplying a 3Nx3N matrix and a 3N vector.}
+    \note<6>{Moreover, we need to compute the square root of the mobility, whatever that means.}
+    \note<7>{And to make things worse, many times we do not even have an expression for the mobility. Which is an object that emerges from macroscopic hydrodynamics.}
+    \note<8>{Instead of using this equation, we can arrive at the same dynamics by solving the Stokes equations coupled with particles. This opens the way to a family of Eulerian-Lagrangian algorithms, our specialty.}
 \end{frame}
 
 
@@ -981,9 +1072,9 @@
               \huge \textbf{Green formalism}
             \end{center}
           }
-          \centering $\vec{v} = \oper{G}\tilde{\vec{f}}
+          \centering $\vec{v}(\vec{r}) = \oper{G}\tilde{\vec{f}}
           \onslide<4->{
-            :=\int{\oper{G}(\vec{r}, \vec{r}^\prime)\tilde{\vec{f}}(\vec{r}) d\vec{r}^\prime}
+            :=\int{\oper{G}(\vec{r}, \vec{r}^\prime)\tilde{\vec{f}}(\vec{r}^\prime) d\vec{r}^\prime}
           }$ %\left(\oper{S}\vec{F} + \nabla\cdot\mathcal{Z}\right)$$
           \onslide<5->{
             \begin{block}{Force Coupling Method (FCM)}
@@ -1015,55 +1106,60 @@
         }
       \end{column}
     \end{columns}
-    \note{
+    \note<1-2>{
       \begin{itemize}
-        \only<1-2>{
-        \item Interesting for us is that, if we couple the Stokes equations with a series of particles we can prove that the equations for the dynamics of the particles are equivalent to those of Brownian Dynamics.
-        \item In particular, we are using the Immersed Boundary formalism. First by spreading particle forces as an external fluid forcing. Then imposing a no-slip condition on the surface of the particles by making them follow the fluid exactly.
-        }
-        \only<3>{
-        \item Let me dwell a little bit more into this. We use the Green formalism to construct an operator, G, that transforms forces to velocities in the fluid.
-        }
-      \only<4>{\item Where this operator is applied via a convolution.}
-      \only<5>{\item From the particle's perspective, putting all the operators together we can write the following equation. Where we input particle forces and get back particle displacements. We call this the Force Coupling Method.}
-      \only<6>{
-      \item As I mentioned earlier, by carefully defining the mobility like this we can see that this form is, in fact, equivalent to the Brownian Dynamics equation.
-      \item We are still far from done, though. Writing the mobility operator in a functional form...}
-      \only<7>{
-      \item ...tells us that in order to compute just one element of the mobility (how one particle responds to a force acting on another one), we need to perform a double convolution.
-      }
-      \only<8>{
-      \item And I have not even showed you yet the form of the Green operator. Yes, that is an inverse laplacian, whatever that means.
-      }
-      \only<9>{
-      \item To be fair, sometimes we do have a "simple" expression for G, but integrating over all space for every point in the domain is still a no go.
-      }
-      \item 
+      \item Interesting for us is that, if we couple the Stokes equations with a series of particles we can prove that the equations for the dynamics of the particles are equivalent to those of Brownian Dynamics.
+      \item In particular, we are using the Immersed Boundary formalism. First by spreading particle forces as an external fluid forcing. Then imposing a no-slip condition on the surface of the particles by making them follow the local fluid exactly.
       \end{itemize}
     }
-\end{frame}
+    \note<3>{
+      Let me dwell a little bit more into this. We use the Green formalism to construct an operator, G, that transforms forces to velocities in the fluid.
+    }
+    \note<4>{Where this operator is applied via a convolution.}
+    \note<5>{From the particle's perspective, putting all the operators together we can write the following equation. Where we input particle forces and get back particle displacements. We call this the Force Coupling Method.}
+    \note<6>{
+      \begin{itemize}
+      \item As I mentioned earlier, by carefully defining the mobility like this we can see that this form is, in fact, equivalent to the Brownian Dynamics equation.
+      \item We are still far from done, though. Writing the mobility operator in a functional form...
+      \end{itemize}
+    }
+    \note<7>{...tells us that in order to compute just one element of the mobility (how one particle responds to a force acting on another one), we need to perform a double convolution.}
+    \note<8>{And I have not even showed you yet the form of the Green operator. Yes, that is an inverse laplacian, whatever that means.}
+    \note<9>{To be fair, sometimes we do have a "simple" expression for G, but integrating over all space for every point in the domain is still a no go.}
+  \end{frame}
 
 \begin{frame}
   \frametitle{Hydrodynamics}
   \framesubtitle{Triply periodic FCM}
-  \centering
-  \huge
-  \begin{tikzpicture}[thick]
-    \node [style = {draw}] (a) at (0, 4) {$\vec{u}_i= \oper{J}_{\vec{\ppos}_i}\oper{G}(\oper{S}\vec{F} + \nabla\cdot\mathcal Z)$};
-    \onslide<2->{
-      \node [style = {draw}] (b) at (0, 0) {$\vec{u}_i = \oper{J}_{\vec{\ppos}_i}\onslide<3->{\mathfrak{F}^{-1}}\only<3->{\fou{\oper{G}}}\only<2>{\oper{G}}(\onslide<3->{\mathfrak{F}}\oper{S}\vec{F} + \onslide+<2>{\nabla}\onslide+<3->{\vec{k}}\cdot\mathcal Z\onslide+<3->{_{\vec{k}}})$};
-      \draw[->, very thick] (a) to (b);
-      \node (c) at (3.2, 2){ $\mathfrak{F}$: Fourier transform};
+  \begin{overprint}
+    \huge
+    \begin{equation*}
+    \tikz[baseline, remember picture]{\node[anchor=base] (a) {$\vec{u}_i= \oper{J}_{\vec{\ppos}_i}\oper{G}(\oper{S}\vec{F} + \nabla\cdot\mathcal Z)$};}
+  \end{equation*}
+  \vspace*{50pt}
+  \onslide<2->{
+        \begin{equation*}
+        \tikz[baseline, remember picture]{ \node[anchor=base] (b) {$\vec{u}_i = \oper{J}_{\vec{\ppos}_i}\onslide<3>{\mathfrak{F}^{-1}}\only<3>{\fou{\oper{G}}}\only<2>{\oper{G}}(\onslide<3>{\mathfrak{F}}\oper{S}\vec{F} + \onslide<2>{\nabla}\onslide<3>{\vec{k}}\cdot\mathcal Z\onslide<3>{_{\vec{k}}})$};}
+      \end{equation*}
+      \begin{tikzpicture}[overlay, remember picture]
+        \path[very thick, -Triangle, line width=3pt] (a) edge node[midway, above right] {$\mathfrak{F}$: Fourier transform} (b);
+      \end{tikzpicture}
     }
-  \end{tikzpicture}
-  \note{
+  \end{overprint}
+  \note<1>{
     \begin{itemize}
     \item Turns out there is a quite efficient way to overcome this if we impose periodic boundary conditions.
+    \end{itemize}
+  }
+  \note<2>{
+    \begin{itemize}
     \item In that case we can go to Fourier space (which is fast in the GPU).
+    \end{itemize}
+  }
+  \note<3>{
+    \begin{itemize}
     \item And in Fourier space convolutions are just algebraic multiplications. So we can convolve "for free".
-    \item Bonus point, fluctuations are also free for us to compute.
-    \item So we do the cheap stuff, spreading and interpolation, in real space and leave the convolutions and the noise to Fourier space.
-    \item Finally, in this specific case, we have an analytic form of the Greens function in Fourier space.
+    \item Bonus point, fluctuations are also free for us to compute.      
     \end{itemize}
   }
 \end{frame}
@@ -1071,43 +1167,55 @@
 \begin{frame}
   \frametitle{Hydrodynamics}
   \framesubtitle{Triply periodic FCM}
-  \huge
-  $$\vec{u}_i = \oper{J}_{\vec{\ppos}_i}\mathfrak{F}^{-1}\fou{\oper{G}}(\mathfrak{F}\oper{S}\vec{F} + \vec{k}\cdot\mathcal Z_{\vec{k}})$$
-  \begin{block}{\huge\centering Triply Periodic}
-    \centering $\fou{\oper{G}}_{\text{3D}} :=\eta^{-1}k^{-2}\left(\mathbb{I} - \frac{\vec{k}\otimes\vec{k}}{k^2}\right)$
+  \begin{block}{\huge\centering Force Coupling Method}
+    \huge\centering$\vec{u}_i = \oper{J}_{\vec{\ppos}_i}\mathfrak{F}^{-1}\fou{\oper{G}}(\mathfrak{F}\oper{S}\vec{F} + \vec{k}\cdot\mathcal Z_{\vec{k}})$
   \end{block}
+  \begin{block}{\huge\centering Triply Periodic}
+    \huge\centering $\fou{\oper{G}}_{\text{3D}} :=\eta^{-1}k^{-2}\left(\mathbb{I} - \frac{\vec{k}\otimes\vec{k}}{k^2}\right)$
+  \end{block}
+  \note<1>{
+    \begin{itemize}
+    \item So we do the cheap stuff, spreading and interpolation, in real space and leave the convolutions and the noise to Fourier space.
+    \item Finally, in this specific case, we have an analytic form of the Greens function in Fourier space.
+    \end{itemize}
+  }
 \end{frame}
+
 \begin{frame}
   \frametitle{Hydrodynamics in confined geometries}
-  \framesubtitle{New algorithms for Brownian Dynamics with Hydrodynamic Interactions (BDHI)}   
+  \framesubtitle{New algorithms for Brownian Dynamics with Hydrodynamic Interactions (BDHI)}
+   \begin{block}{\centering Force Coupling Method}
+      \begin{center}
+        \Large $\vec{u}_i = \oper{J}_{\vec{\ppos}_i}\mathfrak{F}^{-1}\fou{\oper{G}}_\text{\tiny 3D}\big(\mathfrak{F}\oper{S}\vec{F} + \vec{k}\cdot\mathcal Z\big)$
+      \end{center}
+   \end{block}
   \begin{columns}[T]
     \begin{column}{0.5\linewidth}
       \begin{itemize}
       \item<1-> Quasi two-dimensional (q2D)
-      %\item<4-> Doubly periodic (DP)
-      \end{itemize}
+         \end{itemize}
       \begin{overlayarea}{\linewidth}{0.5\paperheight}
         \only<1-3>{\includesvg[width=0.9\linewidth]{gfx/q2d}\\
           \begin{center}
             q2D: $\delta\rightarrow 0$.\\3D fluid, 2D particles
           \end{center}
           }
-          %\only<4>{\includesvg[width=0.9\linewidth]{gfx/dpstokes_sketch}}
-      \end{overlayarea}
+         \end{overlayarea}
     \end{column}
     \begin{column}{0.5\linewidth}
-      \begin{overlayarea}{\linewidth}{0.5\paperheight}
+      \vspace*{-10pt}
+      \begin{overlayarea}{\linewidth}{0.4\paperheight}
         \begin{minipage}{\linewidth}
           \only<2>{
             \begin{block}{Collective diffusion}
               $$D_c(k) \propto H_c(k)$$
-              \includegraphics[width=\linewidth]{gfx/q2Dfrom3dto2d}\\
+              \includegraphics[width=0.9\linewidth]{gfx/q2Dfrom3dto2d}\\
             \end{block}
           }
-          \only<3>{\begin{block}{$D_c(k)> 0$ in q2D}          
+          \only<3>{\begin{block}{$D_c(k)> 0$ in q2D}
               \begin{center}
-                Correlated density perturbations
-                \includegraphics[width=\linewidth]{gfx/q2Dstripes}\\
+                Correlated density fluctuations 
+                \includegraphics[width=0.9\linewidth]{gfx/q2Dstripes}\\
                 \small Time$\rightarrow$
               \end{center}
             t2D: 2D fluid and particles
@@ -1116,13 +1224,17 @@
         \end{minipage}
       \end{overlayarea}
     \end{column}
-  \end{columns}  
+  \end{columns}
+  \begin{center}
+    \vspace*{-6pt}
+    \small[{\bf Raul P. Pelaez} et. al. JSTAT 2018.]
+  \end{center}
   \note<1>{
     \begin{itemize}
     \item Now I want to introduce some modifications to the Force Coupling Method for other kinds of geometries.
     \item I will start with what we call a quasi two dimensional system.
     \item Imagine a fluid that is periodic in the plane but open in the perpendicular direction.
-    \item We embed particles in this fluid and confine them with some external potential. The quasi two dimensional limit happens when this force becomes a hard constraint and the particles move strictly in a plane.
+    \item We embed particles in this fluid and confine them with some external potential. The quasi two dimensional limit happens when this force becomes a hard constraint and the particles move strictly in a plane.    
     \end{itemize}
   }  
   \note<2>{
@@ -1132,7 +1244,7 @@
   }
   \note<3>{
     \begin{itemize}
-    \item Collective diffusion speaks of the correlation between density perturbations, its divergence in a quasi two dimensional system translates into a drastic enhancement of the dispersion when compared with a fully two dimensional system.
+    \item Collective diffusion speaks of the correlation between density perturbations, its divergence in a quasi two dimensional system translates into a drastic enhancement of the dispersion when compared with a fully two dimensional system. %EXPLICAR MEJOR Dc
     \end{itemize}
   }
 \end{frame}
@@ -1140,14 +1252,15 @@
 
 \begin{frame}
   \frametitle{Force Coupling Method in quasi 2D}
-  \begin{overlayarea}{\linewidth}{0.2\paperheight}
+  \begin{overlayarea}{\linewidth}{0.21\paperheight}
     \begin{block}{\centering Force Coupling Method}
-      \begin{center}
-        \only<1-7>{$\vec{u}_i = \oper{J}_{\vec{\ppos}_i}\mathfrak{F}^{-1}\fou{\oper{G}}_{\text{3D}}(\mathfrak{F}\oper{S}\vec{F} + \vec{k}\cdot\mathcal Z)$}%
-        \only<8-9>{$\vec{u}_i = \oper{J}_{\vec{\ppos}_i}\mathfrak{F}^{-1}\left(\fou{\oper{G}}_{\text{3D}}\mathfrak{F}\oper{S}\vec{F} + \fou{\vec{w}}\right)$}
-        \only<10-11>{$\vec{u}_i = \oper{J}_{\vec{\ppos}_i}^{\parallel}\mathfrak{F}^{-1}\left(\fou{\oper{G}}_{\qtd}\mathfrak{F}\oper{S}^{\parallel}\vec{F} + \fou{\vec{w}}\right)$}
-        \only<12->{$\vec{u}_i = \oper{J}_{\vec{\ppos}_i}^{\parallel}\mathfrak{F}^{-1}\left(\fou{\oper{G}}_{\qtd}\mathfrak{F}\left[\oper{S}^{\parallel}\vec{F} + \vec{\partial}_{\vec{\ppos}}\oper{S}^{\parallel}\left(\kT\right)\right] + \fou{\vec{w}}\right)$}
-      \end{center}
+      \Large\centering
+      $%
+      \only<1-7>{\vec{u}_i = \oper{J}_{\vec{\ppos}_i}\mathfrak{F}^{-1}\fou{\oper{G}}_{\text{\tiny 3D}}\big(\mathfrak{F}\oper{S}\vec{F} + \vec{k}\cdot\mathcal Z\big)}%
+      \only<8-9>{\vec{u}_i = \oper{J}_{\vec{\ppos}_i}\mathfrak{F}^{-1}\left(\fou{\oper{G}}_{\text{\tiny 3D}}\mathfrak{F}\oper{S}\vec{F} + \fou{\vec{w}}\right)}
+      \only<10-11>{\vec{u}_i = \oper{J}_{\vec{\ppos}_i}^{\parallel}\mathfrak{F}^{-1}\left(\fou{\oper{G}}_{\qtd}\mathfrak{F}\oper{S}^{\parallel}\vec{F} + \fou{\vec{w}}\right)}
+      \only<12->{\vec{u}_i = \oper{J}_{\vec{\ppos}_i}^{\parallel}\mathfrak{F}^{-1}\left(\fou{\oper{G}}_{\qtd}\mathfrak{F}\left[\oper{S}^{\parallel}\vec{F} + \vec{\partial}_{\vec{\ppos}}\oper{S}^{\parallel}\left(\kT\right)\right] + \fou{\vec{w}}\right)}
+      $
     \end{block}
   \end{overlayarea}
   \begin{columns}[T]
@@ -1158,15 +1271,15 @@
       \end{center}
       \onslide<11->{
         \begin{equation*}
-        \begin{aligned}
-        \tens{M}_{\qtd} :=&\oper{J}^{\parallel}\oper{G}_{\qtd}\oper{S}^{\parallel}\\
-          \kT \vec{\partial}_{\vec{\ppos}}\cdot \tens{M}_{\qtd} \neq& 0
-        \end{aligned}
-      \end{equation*}
-    }
+          \begin{aligned}
+            \tens{M}_{\qtd} :=&\oper{J}^{\parallel}\oper{G}_{\qtd}\oper{S}^{\parallel}\\
+            \kT \vec{\partial}_{\vec{\ppos}}\cdot \tens{M}_{\qtd} \neq& 0
+          \end{aligned}
+        \end{equation*}
+      }
     \end{column}
     \begin{column}{0.6\linewidth}
-      \begin{overlayarea}{\linewidth}{0.7\paperheight}
+      \begin{overlayarea}{\linewidth}{0.4\paperheight}
         \only<1-6>{
           \only<2->{Problems:}
           \begin{enumerate}
@@ -1188,7 +1301,7 @@
         }
         \only<8>{
           \begin{center}
-            $\left\langle\fou{\vec{w}}\otimes \fou{\vec{w}}\right\rangle = 2\kT \fou{\oper{G}}$
+            \Large$\left\langle\fou{\vec{w}}\otimes \fou{\vec{w}}\right\rangle = 2\kT \fou{\oper{G}}$
           \end{center}
         }
         \only<9-12>{
@@ -1214,21 +1327,29 @@
       \end{overlayarea}
     \end{column}
   \end{columns}
+  \begin{center}
+    \vspace*{-2.5pt}
+    \small [{\bf Raul P. Pelaez} et. al. JSTAT 2018.]
+  \end{center}
   \note<1>{Let us see how we can adapt the Force Coupling Method to this confined regime.}
   \note<2>{We cannot use triply periodic algorithm directly because in doing so we would have to...}
   \note<3>{...make the confining force infinite}
   \note<4>{And increase the simulation domain to mimic an open boundary.}
   \note<5>{Both of these problems disappear if we eliminate the Z direction from our description.}
   \note<6>{Doing so requires a series of changes.}
-  \note<7>{First, lets get fluctuations out of the convolution. We can reintroduce them later ad-hoc with some form that satisfies flucuation-dissipation balance.}
-  \note<8>{Now we can use the fact that particles are not allowed to leave the plane and preconvolve them in Z. Remember that the spreading kernel is separable in the three components like this. }
-  \note<9,10>{Since the kernel is analytical (in particular we use a Gaussian), and we have the expression of the three-dimensional Greens function, we can simply integrate in the Z direction to get a new Greens function defined only in the plane. Note that spreading and interpolation now happen also in the plane.}
+  \note<7-8>{First, lets get fluctuations out of the convolution. We can reintroduce them later ad-hoc with some form that satisfies flucuation-dissipation balance.}
+  \note<9>{Now we can use the fact that particles are not allowed to leave the plane and preconvolve them in Z. Remember that the spreading kernel is separable in the three components like this. }
+  \note<10>{Since the kernel is analytical (in particular we use a Gaussian), and we have the expression of the three-dimensional Greens function, we can simply integrate in the Z direction to get a new Greens function defined only in the plane. Note that spreading and interpolation now happen also in the plane.}
   \note<11>{We end up with a purely two-dimensional description with an analytic form for G. Alas, if we study the mobility, defined as we did before, we see that its divergence, the thermal drift, is different from zero. This speaks of the fact that the flow in the plane is effectively compressible.}
-  \note<12>{It is not trivial to show that the thermal drift, that comes from the confining force, appears as an entropic force coming from a pressure gradient and has this particular shape.
-    This concludes the adaptation of the Force Coupling method to quasi two-dimensional geometries. And it is worth mentioning that we have some lee-way when choosing the Green's function here, allowing to reuse the same algorithm for other kinds of strongly confined systems. Such as when the fluid is also two dimensional.}  
+  \note<12>{
+    \begin{itemize}
+    \item It is not trivial to show that the thermal drift, that comes from the confining force, appears as an entropic force coming from a pressure gradient and has this particular shape.
+    \item Maybe more intiutively, the force coming from the confining potential induces a flow which acts as a source of fluid momentum in the plane. And in fact enhances collective diffusion.      
+    \item This concludes the adaptation of the Force Coupling method to quasi two-dimensional geometries. And it is worth mentioning that we have some lee-way when choosing the Green's function here, allowing to reuse the same algorithm for other kinds of strongly confined systems. Such as when the fluid is also two dimensional.
+    \end{itemize}
+  }
 \end{frame}
 
-% Maybe more intiutively, the force coming from the confining potential, induces a flow which acts as a source of fluid momentum in the plane. And in fact enhances collective diffussion.
 
 \begin{frame}
   \frametitle{Doubly Periodic Force Coupling Method}
@@ -1249,11 +1370,12 @@
         \fou{\pi} - \vec{\fou{f}}, \qquad   [i\vec{k},\partial_z]\cdot\vec{\fou{\fvel}} = 0%
       \end{equation*}
     \end{overprint}
-\end{block}
+  \end{block}
   \begin{columns}[T]
     \begin{column}{0.45\linewidth}
       \begin{minipage}{\linewidth}
         \includesvg[width=1.1\linewidth]{gfx/dpstokes_sketch}
+        \vspace*{-20pt}
         \only<1>{
           \begin{columns}
             \begin{column}{0.48\linewidth}
@@ -1271,72 +1393,74 @@
       \end{minipage}
     \end{column}
     \begin{column}{0.55\linewidth}
-      \only<10->{
-        Hardships
-        \begin{enumerate}
-        \item<11-> BVP solver
-        \item<12-> Requires Chebyshev space in Z
-          \only<12>{
-            \begin{center}
+      \begin{overlayarea}{\linewidth}{0.54\paperheight}
+        \only<10->{
+          \centering {\Large\bf Hardships}
+          \begin{enumerate}
+          \item<11-> BVP solver
+          \item<12-> Requires Chebyshev space in Z
+            \only<12>{
+              \begin{center}
                 \includesvg[width=0.6\linewidth]{gfx/chebgrid}
-            \end{center}
+              \end{center}
+            }
+          \item<13-> Walls added as corrections
+            \only<13>{
+              \begin{equation*}
+                \vec{\fvel}^* = \vec{\fvel} + \vec{\fvel}_{\text{corr}} \rightarrow \vec{\fvel}^*(z=\pm H) = 0 
+              \end{equation*}
+            }
+          \item<14-> Fluct. require iterative solver\\
+            \begin{itemize}
+            \item Lanczos: $\sim 10$ Stokes solves
+            \item Thermal drift: 2 Stokes solves 
+            \end{itemize}
+          \end{enumerate}
+        }
+          \only<2-5>{Problems:
+            \begin{enumerate}
+            \item<2-> Unknown Green's function        
+            \item<3-> Cannot use $\mathfrak{F}$ in $Z$
+            \end{enumerate}    
+            \only<4->{Solutions:
+              \begin{enumerate}
+              \item<4-> Solve Stokes directly
+              \item<5-> $\mathfrak{F}$ only in $XY$ plane        
+              \end{enumerate}
+            }
           }
-        \item<13-> Walls added as corrections
-          \only<13>{
+            \only<6-8>{
+              \centering $\mathfrak{F}$ only in $XY$ plane
+              \begin{equation*}
+                \begin{aligned}
+                  \nabla &\rightarrow \left[ik_x, ik_y, \partial_z\right] := [i\vec{k},\partial_z]\\
+                  \vec{f} &\rightarrow \left[\fou{f}_x, \fou{f}_y, f_z\right] := \fou{\vec{f}}(\vec{k}, z)
+                \end{aligned}
+              \end{equation*}
+            }
+            \only<9>{
+              BVP for each $\vec{k}$. Embarrassingly parallel
+            }          
+          \only<8>{
             \begin{equation*}
-              \vec{\fvel}^* = \vec{\fvel} + \vec{\fvel}_{\text{corr}} \rightarrow \vec{\fvel}^*(z=\pm H) = 0 
+              \nabla^2\pi = \nabla\cdot\vec{f}
             \end{equation*}
           }
-        \item<14-> Fluct. require iterative solver\\
-          \begin{itemize}
-          \item Lanczos: $\sim 10$ Stokes solves
-          \item Thermal drift: 2 Stokes solves 
-          \end{itemize}
-        \end{enumerate}
-      }
-      \begin{overlayarea}{\linewidth}{0.8\paperheight}
-        \only<2-5>{Problems:
-          \begin{enumerate}
-          \item<2-> Unknown Green's function        
-          \item<3-> Cannot use $\mathfrak{F}$ in $Z$
-          \end{enumerate}    
-          \only<4->{Solutions:
-            \begin{enumerate}
-            \item<4-> Solve Stokes directly
-            \item<5-> $\mathfrak{F}$ only in $XY$ plane        
-            \end{enumerate}
-          }
-        }
-        \begin{overlayarea}{\linewidth}{0.2\paperheight}
-          \only<6-8>{
-            \centering $\mathfrak{F}$ only in $XY$ plane
-            \begin{equation*}
-            \begin{aligned}
-              \nabla &\rightarrow \left[ik_x, ik_y, \partial_z\right] := [i\vec{k},\partial_z]\\
-              \vec{f} &\rightarrow \left[\fou{f}_x, \fou{f}_y, f_z\right] := \fou{\vec{f}}(\vec{k}, z)
-            \end{aligned}
-          \end{equation*}
-          }
           \only<9>{
-            BVP for each $\vec{k}$. Embarrassingly parallel
-          }          
-        \end{overlayarea}
-        \only<8>{
-          \begin{equation*}
-            \nabla^2\pi = \nabla\cdot\vec{f}
-          \end{equation*}
-        }
-        \only<9>{
-          \begin{equation*}
-            \begin{aligned}
-              \left(\partial_z^2-k^2\right)&\fou{\pi} = \left[i\vec{k}, \partial_z\right]\cdot\fou{\vec{f}}\\
-              \onslide<9->{\left(\partial_z \pm k\right)&\fou{\pi}(\vec{k}, z=\pm H) = 0}
-            \end{aligned}
-          \end{equation*}
-        }
+            \begin{equation*}
+              \begin{aligned}
+                \left(\partial_z^2-k^2\right)&\fou{\pi} = \left[i\vec{k}, \partial_z\right]\cdot\fou{\vec{f}}\\
+                \onslide<9->{\left(\partial_z \pm k\right)&\fou{\pi}(\vec{k}, z=\pm H) = 0}
+              \end{aligned}
+            \end{equation*}
+          }
       \end{overlayarea}
     \end{column}
   \end{columns}
+  \begin{center}
+    %\vspace*{-20pt}
+    \small [Maxian, {\bf Raul P. Pelaez} et. al. J. Chem. Phys. 2021.]
+  \end{center}
   \note<1>{
     \begin{itemize}
     \item The quasi two-dimensional framework is based on the assumption that the embedded particles are not allowed to leave the plane. It is of no use if we want to simulate something anisotropic, like a lipid bilayer.
@@ -1356,7 +1480,13 @@
   \note<11>{Although embarrassingly parallel, the BVP solver is not straight-forward to encode in a GPU.}
   \note<12>{In particular, it involves defining the Eulerian fields in a Chebyshev grid in the Z direction and performing a so-called fast Chebyshev transform, which is similar to a Fast Fourier transform.}
   \note<13>{If we want different boundary conditions, such as no-slip walls, we must add them as a correction.}
-  \note<14>{Finally, we only know how to add fluctuations via iterative solvers, which require several Stokes solves. And similarly to the quasi 2D case, we also have to add thermal drift, which involves another couple of solves. All in all, we end up again with a mechanism to transform particle forces to velocities that scales linearly with the number of particles. This time for a doubly periodic environment.}   
+  \note<14>{
+    \begin{itemize}
+    \item Finally, we only know how to add fluctuations via iterative solvers, which require several Stokes solves.
+    \item And similarly to the quasi 2D case, we also have to add thermal drift, which involves another couple of solves.
+    \item All in all, we end up again with a mechanism to transform particle forces to velocities that scales linearly with the number of particles. This time for a doubly periodic environment.
+    \end{itemize}
+  }   
 \end{frame}
 
 
@@ -1365,9 +1495,9 @@
   \frametitle{Triply Periodic Electrostatics}
   \framesubtitle{Force Coupling Method for the Poisson equation}
   \begin{center}
-    \begin{minipage}{0.5\linewidth}    
+    \begin{minipage}{0.7\linewidth}    
       \begin{block}{Poisson}
-        \centering $\varepsilon_0\nabla^2\phi = -f(\vec{r}) = -\oper{S}(\vec{r})\vec{Q}$
+        \Large \centering $\varepsilon_0\nabla^2\phi = -f(\vec{r}) = -\oper{S}(\vec{r})\vec{Q}$
       \end{block}
     \end{minipage}
   \end{center}
@@ -1375,10 +1505,10 @@
     \begin{columns}[T]
       \begin{column}{0.39\linewidth}
         \begin{block}<2->{Spreading}
-          $\oper{S}(\vec{r})\vec{Q} = \sum_i Q_i \delta_a(\vec{\ppos}_i - \vec{r})$
+          \centering $\oper{S}(\vec{r})\vec{Q} = \sum_i Q_i \delta_a(\vec{\ppos}_i - \vec{r})$
         \end{block}
         \begin{block}<3->{Gaussian sources}
-          $\delta_a(\vec{r}) = \frac{1}{(2\pi a^2)^{3/2}} e^{-r^2/(2a^2)}$
+          \centering$\delta_a(\vec{r})\propto e^{-r^2/(2a^2)}$
         \end{block}        
       \end{column}
       \begin{column}{0.59\linewidth}
@@ -1387,22 +1517,34 @@
             \vec{E}(\vec{\fpos}) = \partial_{\vec{\fpos}}\phi \rightarrow \fou{\vec{E}} = i\vec{k}\fou{\phi}
           \end{equation*}
           \begin{equation*}
-            \vec{F}_i = Q_i\oper{J}_{\vec{\ppos}_i}\vec{E}
+            \vec{F}_i = Q_i\oper{J}_{\vec{\ppos}_i}\vec{E}(\vec{r})
           \end{equation*}
 
         }
         \begin{block}<5->{Charges to forces}
-          $$\vec{F}_i = Q_i\oper{J}_{\vec{q}_i}\mathfrak{F}^{-1}i\vec{k}\fou{\oper{G}}_P\mathfrak{F}\oper{S}\vec{Q}$$
+          \centering \Large $\vec{F}_i = Q_i\oper{J}_{\vec{q}_i}\mathfrak{F}^{-1}i\vec{k}\fou{\oper{G}}_P\mathfrak{F}\oper{S}\vec{Q}$
         \end{block}
-        \only<6->{$$\fou{\oper{G}}_P = \frac{1}{\varepsilon_0 k^2}$$}
+        \only<6->{$$\fou{\oper{G}}_P = \left(\varepsilon_0 k^2\right)^{-1}$$}
       \end{column}
     \end{columns}
   \end{overlayarea}
   \onslide<1-3>{\footnotesize Supervector notation. Charges $\vec{Q} := \{Q_1,\dots,Q_N\}$}
-  \note<1>{Now I will shift the focus to electrostatics. I want to show you how we can employ our recently our tricks to other equations. In particular, the Force Coupling Method for the Stokes equation has an almost one-to-one simile in the Poisson equation.
-  Here I am showing the Poisson equation for the potential of a domain in the presence of a charge density. epsilon is the permittivity of the medium. We will start with triply periodic boundary conditions.}
-  \note<2>{This time, instead of spreading forces, we will be spreading particle charges. Which is easier, since are spreading only one value, instead of three.}
-  \note<3>{Where we typically model our charges as Gaussian clouds.}
+  \begin{center}
+    % \vspace*{-20pt}
+    \small [Maxian, {\bf Raul P. Pelaez} et. al. J. Chem. Phys. 2021.]
+  \end{center}
+  \note<1>{
+    \begin{itemize}
+    \item Now I will shift the focus to electrostatics.
+    \item I want to show you how we can employ our recently learned tricks to other equations.
+    \item In particular, the Force Coupling Method for the Stokes equation has an almost one-to-one simile for the Poisson equation.
+    \item Here I am showing the Poisson equation for the potential of a domain in the presence of a charge density.
+    \item epsilon is the permittivity of the medium.
+    \item We will start with triply periodic boundary conditions.
+    \end{itemize}
+  }
+  \note<2>{This time, instead of spreading forces, we will be spreading particle charges. Which is easier, since we are spreading only one value, instead of three.}
+  \note<3>{We typically model our charges as Gaussian clouds of width ``a''. Gaussians are easy to deal with in Fourier space.}
   \note<4>{Then, instead of interpolating velocities, we now interpolate electric fields. Which are trivial to compute once we solve the potential, moreover in Fourier space.}
   \note<5>{In the end, we end up with a mechanism to transform particle charges to particle forces that is quite similar to what we have been seeing up until now.}
   \note<6>{Bonus point, the (triply periodic) Green's function is now much more simple.}
@@ -1412,14 +1554,16 @@
   \frametitle{Doubly Periodic Electrostatics}
   \framesubtitle{Force Coupling Method for the Poisson equation}
   \begin{center}
-    \begin{minipage}{0.5\linewidth}    
+    \begin{overlayarea}{0.7\linewidth}{0.2\paperheight}
+      \vspace*{-9.5pt}
       \begin{block}{Poisson}
+        \Large
         \only<1-8>{\centering $\varepsilon_0\nabla^2\phi = -f(\vec{r}) = -\oper{S}(\vec{r})\vec{Q}$}%
-        \only<9->{\centering $\varepsilon_0(\partial_z^2-k^2)\fou{\phi} = -\fou{f}$}%
+        \only<9->{\centering $\varepsilon_0\left(\partial_z^2-k^2\right)\fou{\phi} = -\fou{f}$}%
       \end{block}
-    \end{minipage}
+    \end{overlayarea}
   \end{center}
-  \begin{overlayarea}{\linewidth}{0.5\paperheight}
+  \begin{overlayarea}{\linewidth}{0.47\paperheight}
   \begin{columns}[T]
     \begin{column}{0.39\linewidth}
       \begin{center}
@@ -1436,7 +1580,7 @@
       }
     \end{column}
     \begin{column}{0.59\linewidth}
-      \begin{overlayarea}{\linewidth}{0.8\paperheight}
+      \begin{overlayarea}{\linewidth}{0.5\paperheight}
         \only<3-7>{Problems:
           \begin{enumerate}
           \item<3-> Unknown Green's function        
@@ -1459,15 +1603,15 @@
               \end{aligned}
             \end{equation*}
           }
-          \only<10->{
-            Dielectric jumps $\rightarrow \phi = \phi^*+\phi^c$\\
-            Free space ($\varepsilon_0=\varepsilon_b=\varepsilon_t$):
-            \begin{equation*}
-              \begin{aligned}
-                &\epsilon_0\nabla^2\phi^* = -f + \delta(z)\sigma_b + \delta(z-H)\sigma_t\\
-                & (\partial_z-k)\phi(\vec{k}, 0) = 0
-              \end{aligned}
-            \end{equation*}
+%          \only<10->{
+%            Dielectric jumps $\rightarrow \phi = \phi^*+\phi^c$\\
+%            Free space ($\varepsilon_0=\varepsilon_b=\varepsilon_t$):
+%            \begin{equation*}
+%              \begin{aligned}
+%                &\epsilon_0\nabla^2\phi^* = -f + \delta(z)\sigma_b + \delta(z-H)\sigma_t\\
+%                & (\partial_z-k)\phi(\vec{k}, 0) = 0
+%              \end{aligned}
+%            \end{equation*}
 %            Correction:
 %            \begin{equation*}
 %              \begin{aligned}
@@ -1475,29 +1619,41 @@
 %                & \varepsilon_0\partial_z\phi^c(z\rightarrow 0^+) -\varepsilon_b\partial_z\phi^c(z\rightarrow 0^-) = m^b_E
 %              \end{aligned}
 %            \end{equation*}            
-            }
+%            }
         \end{overlayarea}
       \end{overlayarea}
     \end{column}
   \end{columns}  
 \end{overlayarea}
 \onslide<1>{\footnotesize Supervector notation. Charges $\vec{Q} := \{Q_1,\dots,Q_N\}$}
-\note<1>{And to finish with this section, I want to showcase how we can again use this formalism for a doubly periodic domain. Along with hydrodynamics, we can use these algorithms to model things like ionic channels in a cellular membrane.}
+\begin{center}
+  \small [Maxian, {\bf Raul P. Pelaez} et. al. J. Chem. Phys. 2021.]
+\end{center}
+\note<1>{
+  \begin{itemize}
+  \item To finish with this section, I want to showcase how we can again use this formalism for a doubly periodic domain.
+  \item Along with hydrodynamics, we can use these algorithms to model things like ionic channels in a cellular membrane.
+  \end{itemize}
+}
 \note<2>{We developed an algorithm for doubly periodic electrostatics, translating the lessons we learned for hydrodynamics. Now instead of no-slip walls we have charged surfaces and permitivity jumps.}
-\note<3-7>{We have the same problems as before, and we solve them in the exact same way.}
-\note<8>{Eventually, we end up with a BVP that is equivalent to the one we had to solve for the pressure in Stokes.
-This algorithm also comes with similar hardships as the Stokes one: We need to solve BVPs, different boundary conditions are added as corrections (which can be quite dense mathematically).}
+\note<3-8>{We have the same problems as before, and we solve them in the exact same way.}
+\note<9>{
+  \begin{itemize}
+  \item Eventually, we end up with a BVP that is equivalent to the one we had to solve for the pressure in Stokes.
+    This algorithm also comes with similar hardships as the Stokes one: We need to solve BVPs, different boundary conditions are added as corrections (which can be quite dense mathematically).
+  \end{itemize}
+}
 \end{frame}
 
-%\subsection{UAMMD: A GPU framework for complex fluids}
-%\begin{frame}
-%  \frametitle{\insertsubsectionnavigation{\linewidth}} 
-%  \begin{itemize}
-%  \item What UAMMD is and tries to achieve
-%  \item ``UAMMD has enabled the community to study hydrodynamics in new systems''
-%  \item Not trying to sell UAMMD, just showcase what it can do.    
-%  \end{itemize}
-%\end{frame}
+% \subsection{UAMMD: A GPU framework for complex fluids}
+% \begin{frame}
+%   \frametitle{\insertsubsectionnavigation{\linewidth}} 
+%   \begin{itemize}
+%   \item What UAMMD is and tries to achieve
+%   \item ``UAMMD has enabled the community to study hydrodynamics in new systems''
+%   \item Not trying to sell UAMMD, just showcase what it can do.    
+%   \end{itemize}
+% \end{frame}
 
 \section{UAMMD}
 \begin{frame}
@@ -1513,7 +1669,7 @@ This algorithm also comes with similar hardships as the Stokes one: We need to s
 \begin{frame}
   \frametitle{The sea of packages}
   \includesvg[width=\linewidth]{gfx/mdpacks}
-  \note{UAMMD is born in a crowded sea of molecular dynamics packages. Although most of the commercial packages focus on the microscopic level, in other words, molecular dynamics, many times the limits between molecular dynamics and other descriptions proper to complex fluids is kind of blurred from an algorithmic point of view. So in principle this packages, some of them more than others, can be adapted to other descriptions.}
+  \note{UAMMD is born in a crowded sea of molecular dynamics packages. Although most of the commercial packages focus on the microscopic level, in other words, molecular dynamics, many times the limits between molecular dynamics and other descriptions proper to complex fluids are kind of blurred from an algorithmic point of view. So in principle these packages, some of them more than others, can be adapted to other descriptions.}
 \end{frame}
 
 \begin{frame}
@@ -1529,9 +1685,13 @@ This algorithm also comes with similar hardships as the Stokes one: We need to s
   \item<3-> Hackable
   \item<4-> Focus on hydrodynamics
   \end{itemize}
-  \note<1>{I would like to lay out some key points that make UAMMD, in my opinion, stand out.
-    The first one is that UAMMD is header-only library, as opposed to a monolithic single-binary program.
-  This facilitates the use of UAMMD as an accelerator library in other projects. For instance, exposing some of its utilities to python.}
+  \note<1>{
+    \begin{itemize}
+    \item I would like to lay out some key points that make UAMMD, in my opinion, stand out.
+    \item The first one is that UAMMD is header-only library, as opposed to a monolithic single-binary program.
+    \item This facilitates the use of UAMMD as an accelerator library in other projects. For instance, exposing some of its utilities to python.
+    \end{itemize}
+  }
 \note<2>{The UAMMD source code is lightweight and, besides an NVIDIA GPU with its required software development kit UAMMD does not depend on any code that is not included in its repository.}
 \note<3>{I made UAMMD not only adaptable, but hackable. I tried to reduce internal dependencies to a minimum to encourages users to copy or take away parts of it.}
 \note<4>{Finally, there are not a lot of packages out there that put the focus on hydrodynamics and/or complex fluids.}
@@ -1539,18 +1699,24 @@ This algorithm also comes with similar hardships as the Stokes one: We need to s
 
 \subsection{Universally Adaptable Multiscale Molecular Dynamics}
 \begin{frame}[t]
-  \frametitle{UAMMD}
-  \framesubtitle{Universally Adaptable Multiscale Molecular Dynamics}
-  \begin{overprint}
-    \onslide<+>
-    \centering \huge \bf Universal
-    \onslide<+>
-    \centering \huge \bf Adaptable
-    \onslide<+>
-    \centering \huge \bf Multiscale
-    \onslide<+>
-    \centering \huge \bf Molecular Dynamics
-  \end{overprint}
+  \frametitle{Universally Adaptable Multiscale Molecular Dynamics}
+  \begin{block}{
+      \begin{overlayarea}{\linewidth}{0.065\paperheight}
+        \begin{center}
+          \huge \bf
+          \only<1>{Universal}
+          \only<2>{Adaptable}
+          \only<3>{Multiscale}
+          \only<4>{Molecular Dynamics}
+        \end{center}
+      \end{overlayarea}
+    }
+    \centering \Large
+    \only<1>{Lagrangian and Eulerian descriptions.}%
+    \only<2>{Independent building blocks.}%
+    \only<3>{Solvers for many scales.}%
+    \only<4>{Mainly particle based.}%
+  \end{block}
   \begin{columns}[T]
     \begin{column}{0.65\linewidth}
       \begin{overlayarea}{\linewidth}{0.6\paperheight}
@@ -1574,10 +1740,6 @@ This algorithm also comes with similar hardships as the Stokes one: We need to s
       \includegraphics[width=1.0\linewidth]{poster.png}
      \end{column}
    \end{columns}
-   \only<1>{\Large Lagrangian and Eulerian descriptions.}%
-   \only<2>{\Large Independent building blocks.}%
-   \only<3>{\Large Solvers for many scales.}%
-   \only<4>{\Large Mainly particle based.}%
    \note<1>{I like to use the UAMMD acronym to introduce its core philosophies. Universal means that both Eulerian and Lagrangian descriptions are supported.}
    \note<2>{Adaptable speaks about the modular design of the code, which I will get into more detail soon. The library is composed of a series of independent modules that can be interconnected to create one simulation or another.}
    \note<3>{Multiscale means that UAMMD offers solvers for all the levels of description that I introduced at the start.}
@@ -1619,8 +1781,8 @@ This algorithm also comes with similar hardships as the Stokes one: We need to s
     \onslide<5>
     \begin{code2}[]{label=code:module}
       ...
-      auto md = std::make_shared<VerletNVE>(pd, /*Parameters*/);
-      md->forwardTime(); //Exposed by every Integrator
+      auto bd = std::make_shared<BDHI::FCM>(pd, /*Parameters*/);
+      bd->forwardTime(); //Exposed by every Integrator
       ...      
     \end{code2}
     \onslide<6>
@@ -1629,29 +1791,48 @@ This algorithm also comes with similar hardships as the Stokes one: We need to s
       auto elec = std::make_shared<Poisson>(pd,/*Parameters*/);
       elec->sum({.force=true, .energy=false, .virial=false});
       //Exposed by every Integrator
-      md->addInteractor(elec);
-      md->forwardTime();
+      bd->addInteractor(elec);
+      bd->forwardTime();
       ...      
     \end{code2}
   \end{overprint}
-  \note<1>{When introducing complex fluids, I stated that the majority of levels of description in complex fluids can be interpreted as a series of interacting particles with a state that evolves. This sentence is the foundation of UAMMD. A first layer abstracts the actual machine. Then, we enter into a continuous loop that represents a simulation. Particles feed their properties (positions, velocities...) downwards to rest of the modules, and UAMMD distinguishes between two types of modules.
-    Integrators, which read the state of the particles at one time and take them to the next. And Interactors, which are used by Integrators to compute Forces, Energies or virials.}
+  \note<1>{
+    \begin{itemize}
+    \item When introducing complex fluids, I stated that the majority of levels of description in complex fluids can be interpreted as a series of interacting particles with a state that evolves.
+    \item This sentence is the foundation of UAMMD. A first layer abstracts the actual machine. Then, we enter into a continuous loop that represents a simulation.
+    \item Particles feed their properties (positions, velocities...) downwards to rest of the modules, and UAMMD distinguishes between two types of modules.
+    \item Integrators, which read the state of the particles at one time and take them to the next.
+    \item And Interactors, which are used by Integrators to compute Forces, Energies or virials.
+    \end{itemize}
+  }
   \note<2>{This conceptual separation is reflected in actual code, where System is a C++ class that can be instantiated.}
-  \note<3,4>{In the same way we can initialize an instance of ParticleData, a container for handling the particle properties.}
-  \note<5>{Integrators are fed a Particle container and are in charge of forwarding them to the next time step. Integrator is a virtual class, and thus can be specialized for each solver. Here VerletNVE is the UAMMD constant-energy molecular dynamics Integrator.}
-  \note<6>{Finally, Interactors, also a virtual class, can be issued to compute forces, etc. and can be added to an Integrator, which in turn will use when forwarding the simulation. Poisson here is the UAMMD Interactor for triply periodic electrostatics.}
+  \note<3>{In the same way we can initialize an instance of ParticleData, a container for handling the particle properties.}
+  \note<4>{Properties that can be easily accessed at any time.}
+  \note<5>{Integrators are fed a Particle container and are in charge of forwarding them to the next time step. Integrator is a virtual class, and thus can be specialized for each solver. Here FCM is the UAMMD module for hydrodynamics with the force coupling method.}
+  \note<6>{Finally, Interactors, also a virtual class, can be issued to compute things like forces, which will be added at the particle container. and can be added to an Integrator, which in turn will use it as needed when forwarding the simulation. Poisson here is the UAMMD Interactor for triply periodic electrostatics.}
 \end{frame}
   
 \begin{frame}
   \frametitle{Available solvers}
   \includesvg[width=\linewidth]{gfx/sketchUAMMD_integrators}
-  \note{This is a list of Integrators available in UAMMD to this date. As you can see, UAMMD exposes solvers for all levels of description that we discussed, and includes Lagrangian and Eulerian/Lagrangian formulations. From molecular dynamics to dissipative particle dynamics and Doubly periodic hydrodynamics.}
+  \note{
+    \begin{itemize}
+    \item This is a list of Integrators available in UAMMD to this date.
+    \item As you can see, UAMMD exposes solvers for all levels of description that we discussed, and includes Lagrangian and Eulerian/Lagrangian formulations.
+    \item From molecular dynamics to dissipative particle dynamics and Doubly periodic hydrodynamics.
+    \end{itemize}
+  }
 \end{frame}
 
 \begin{frame}
   \frametitle{Available interactions}
   \includesvg[width=\linewidth]{gfx/sketchUAMMD_interactors}
-  \note{Moreover, the familiar interactions are available as independent Interactor modules, neighbour lists, bonds, electrostatics in several geometries... And the list grows, with collaborators working on Interactors for things like: Optohydrodynamics, magnetism, coarse-grained potentials...}
+  \note{
+    \begin{itemize}
+    \item Moreover, the familiar interactions are available as independent Interactor modules, neighbour lists, bonds, electrostatics in several geometries...
+    \item And the list grows, with collaborators working on Interactors for things like: Optohydrodynamics, magnetism, coarse-grained potentials...
+    \end{itemize}
+  }
 \end{frame}
 
 \begin{frame}
@@ -1670,7 +1851,7 @@ This algorithm also comes with similar hardships as the Stokes one: We need to s
       \onslide<4->{\includegraphics[height=0.7\paperheight]{gfx/uammdtutorial2}}
     }
   \end{figure}
-  \note<1>{UAMMD is open-source and freely available as a github repository.}
+  \note<1>{UAMMD is open-source and freely available as a repository at github.}
   \note<2,3,4>{This repository is rich with examples, including an in depth series of them that increasingly introduce the UAMMD concepts in a literary, tutorial fashion.}
 \end{frame}
 
@@ -1706,9 +1887,12 @@ This algorithm also comes with similar hardships as the Stokes one: We need to s
     \end{itemize}
   \item<+-> \textbf{Physics}.
     \begin{itemize}
-    \item<+-> Colloid diffusion under soft (and hard) two-dimensional confinement.
-    \item<+-> Dynamics of star-polymer solutions.
-    \item<+-> Intra-cellular viscosity.
+    \item<+-> {Colloid diffusion under soft (and hard) two-dimensional confinement.\newline
+        {\scriptsize [{\bf Raul P. Pelaez} et. al. JSTAT 2018.]}}
+      \item<+-> {Dynamics of star-polymer solutions.\newline
+          {\scriptsize [{\bf Raul P. Pelaez and Delgado-Buscalioni, R.} Macromolecules 2020]}}
+      \item<+-> {Intra-cellular viscosity.\newline
+          {\scriptsize [Rodríguez, Sanz, {\bf Raul P. Pelaez} et.al. 2019 Adv. Biosyst.]}}
     \end{itemize}
 %  \item Use this slide to give an outline of the talk
   \end{enumerate}
