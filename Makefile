@@ -3,9 +3,11 @@ TOCLEAN=*aux *bbl *blg *lof *lol *out *toc *xml *lot *log *ilg *ind *acn *glo *i
 all: clean
 	@texfot --ignore="This is" pdflatex -interaction=batchmode  -draftmode $(OPTIONS) main	
 	@texfot	--ignore="This is" pdflatex -interaction=batchmode $(OPTIONS) main
+	@texfot	--ignore="This is" pdflatex -interaction=batchmode $(OPTIONS) main
 
 verbose: clean
 	pdflatex  -draftmode $(OPTIONS) main	
+	pdflatex $(OPTIONS) main
 	pdflatex $(OPTIONS) main
 
 rebuild:
