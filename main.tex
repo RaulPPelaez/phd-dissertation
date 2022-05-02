@@ -112,7 +112,7 @@
 
 \title{Complex fluids in the GPU era}
 \subtitle{Algorithms and simulations}
-\author{Raul P. Pelaez}
+\author{Raúl P. Peláez}
 \institute{Universidad Autónoma de Madrid}
 \date{\today}
 %\captionsetup[figure]{font=small,skip=0pt}
@@ -128,7 +128,14 @@
     \centering
     \includegraphics[width=0.25\linewidth]{UAMlogo}
   \end{figure}
-  \note{This is a GPU. A powerful hardware with a unique programming model. Harvesting its tremendous raw power requires developing algorithms and software specifically tailored for it. My work during these past years has been devoted to exploiting the GPU for the simulation of complex fluids. Now, before we continue, let me give you a summary of this talk. }
+  \note{
+    \begin{itemize}
+    \item This is a GPU. A powerful hardware with a unique programming model.
+    \item Harvesting its tremendous raw power requires developing algorithms and software specifically tailored for it.
+    \item My work during these past years has been devoted to exploiting the GPU for the simulation of complex fluids.
+    \item Now, before we start, let me give you a summary of this talk.
+    \end{itemize}
+  }
 \end{frame}
 
 \section{Introduction}
@@ -808,7 +815,7 @@
   \centering
   \includesvg[width=0.55\linewidth]{gfx/gridparticlesdense}\\%
   \centering
-  Random distribution with $\sim 1$ particle per grid point
+  Random 3D distribution with $\sim 1$ particle per grid point
   \note{
     \begin{itemize}
     \item To test both atomics and the effect of the memory pattern, I will study a really dense random distribution of particles.
@@ -833,7 +840,8 @@
           \centering
           \only<1>{\includesvg[width=\linewidth]{gfx/bppcudablocks}}
           \only<2>{\includesvg[width=\linewidth]{gfx/tppcudablocks}}
-          \only<3>{\includesvg[width=\linewidth]{gfx/smcudablocks}}
+          \only<3>{\includesvg[width=\linewidth]{gfx/smcudablocks}\\
+            \scriptsize[{\bf Yu-hsuan Shih, et. al. } ArXiv 2021.]}
         \end{block}
       \end{overlayarea}
     \end{column}
