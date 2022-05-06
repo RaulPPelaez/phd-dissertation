@@ -130,9 +130,9 @@
   \end{figure}
   \note{
     \begin{itemize}
+    \item My work during these past years has been devoted to exploiting the GPU for the simulation of complex fluids.
     \item This is a GPU. A powerful hardware with a unique programming model.
     \item Harvesting its tremendous raw power requires developing algorithms and software specifically tailored for it.
-    \item My work during these past years has been devoted to exploiting the GPU for the simulation of complex fluids.
     \item Now, before we start, let me give you a summary of this talk.
     \end{itemize}
   }
@@ -141,19 +141,19 @@
 \section{Introduction}
 \begin{frame}
   \frametitle{Talk outline}
-  \only<2>{\tableofcontents[
-    sectionstyle=show/shaded,
-    subsectionstyle=show/show/hide,
-    subsubsectionstyle=show/show/show/hide
-    ]
-  }
-  \only<1>{
+%  \only<2>{\tableofcontents[
+%    sectionstyle=show/shaded,
+%    subsectionstyle=show/show/hide,
+%    subsubsectionstyle=show/show/show/hide
+%    ]
+%  }
+%  \only<1>{
     \tableofcontents[
     sectionstyle=show/show,
     subsectionstyle=hide/hide/hide,
     subsubsectionstyle=hide/hide/hide/hide
     ]
-  }
+%  }
   \note{
     \begin{itemize}
     \item I will start by introducing what complex fluids are, with an overview of the numerical and mathematical machinery we use to simulate them in a computer.
@@ -192,7 +192,8 @@
     \item I showed you what a GPU is at the start. In order to understand the rest of the title you also need to know what a complex fluid is.
     \item Although its definition is a little more general, we understand a complex fluids as the coexistence between a solid and a liquid phase. And note that with solid, we usually mean soft, such as a colloidal particle or a cell's lipidic membrane.
     \item This broad definition encloses a wide variety of systems, many times of biological nature. In this slide I show you a bunch of examples, all of them taken from past and ongoing works in our group.
-    \item Starting up we can see coarse-grained representations of a lipid bilayer, a star polymer under shear flow, a nano dumbell swimming and spinning in a fluid under optically-induced vortexes. A virus capsid, filled with a particular protein, which is being pressed by an AFM tip (the video is not long enough, but the virus ends up exploding under the pressure). Next we have a group of lipidic vesicles, one of them contains a ferromagnetic particle subjected to a magnetic field, spinning the vesicle. This allows to somewhat control the locomotion of the vesicles. The final picture shows the diffusion of the concentration of a colloidal suspension under strong two-dimensional confinement in different regimes.
+    \item Starting up we can see coarse-grained representations of a lipid bilayer, a star polymer under shear flow, a nano dumbell swimming and spinning in a fluid under optically-induced vortexes.
+    \item A virus capsid, filled with a particular protein, which is being pressed by an AFM tip. Next we have a group of lipidic vesicles, one of them contains a ferromagnetic particle subjected to a magnetic field, spinning the vesicle. This allows to somewhat control the locomotion of the vesicles. The final picture shows the diffusion of the concentration of a colloidal suspension under strong two-dimensional confinement in different regimes.
     \end{itemize}    
   }  
   \note<2>{
